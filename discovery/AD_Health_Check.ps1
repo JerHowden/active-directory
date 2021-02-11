@@ -634,7 +634,7 @@ function Get-DcOsName
 {
     Param
     (
-        [string]$dc = ([ADSI]“LDAP://RootDSE”).dnshostname.ToString()
+        [string]$dc = ([ADSI]"LDAP://RootDSE").dnshostname.ToString()
     )
 
     [string]$dc = '*' + $dc + '*'
@@ -653,7 +653,7 @@ function Get-DcGlobalCatalogInfo
 {
     Param
     (
-        [string]$dc = ([ADSI]“LDAP://RootDSE”).dnshostname.ToString()
+        [string]$dc = ([ADSI]"LDAP://RootDSE").dnshostname.ToString()
     )
 
     [string]$dc = '*' + $dc + '*'
@@ -1207,15 +1207,15 @@ function Set-ValueAddedHtmlInfo
     if ($typeOfTest -eq 'DFSRBacklog')
     {
         [int]$maxBackLog = 0
-        for ($j=0; $j -lt $fieldToTest.Replace('<br>','ง').Split('ง').Count; $j++)
+        for ($j=0; $j -lt $fieldToTest.Replace('<br>','ยง').Split('ยง').Count; $j++)
         {
-            if (   ($fieldToTest.Replace('<br>','ง').Split('ง').Get($j) -ne '') `
-              -and (!($fieldToTest.Replace('<br>','ง').Split('ง').Get($j).Contains('Partner'))) `
-              -and (!($fieldToTest.Replace('<br>','ง').Split('ง').Get($j).Contains('Unknown'))) `
-              -and (!($fieldToTest.Replace('<br>','ง').Split('ง').Get($j).Contains('n/a'))) `
+            if (   ($fieldToTest.Replace('<br>','ยง').Split('ยง').Get($j) -ne '') `
+              -and (!($fieldToTest.Replace('<br>','ยง').Split('ยง').Get($j).Contains('Partner'))) `
+              -and (!($fieldToTest.Replace('<br>','ยง').Split('ยง').Get($j).Contains('Unknown'))) `
+              -and (!($fieldToTest.Replace('<br>','ยง').Split('ยง').Get($j).Contains('n/a'))) `
                )
             {
-                [int]$maxBackLog = [math]::max($maxBackLog,$fieldToTest.Replace('<br>','ง').Split('ง').Get($j))
+                [int]$maxBackLog = [math]::max($maxBackLog,$fieldToTest.Replace('<br>','ยง').Split('ยง').Get($j))
             }
         }
         
@@ -1234,15 +1234,15 @@ function Set-ValueAddedHtmlInfo
     elseif ($typeOfTest -eq 'DFSRFolderEnabled')
     {
         [bool]$dfsrFolderEnabled = $true
-        for ($j=0; $j -lt $fieldToTest.Replace('<br>','ง').Split('ง').Count; $j++)
+        for ($j=0; $j -lt $fieldToTest.Replace('<br>','ยง').Split('ยง').Count; $j++)
         {
-            if (   ($fieldToTest.Replace('<br>','ง').Split('ง').Get($j) -ne '') `
-              -and (!($fieldToTest.Replace('<br>','ง').Split('ง').Get($j).Contains('Partner'))) `
-              -and (!($fieldToTest.Replace('<br>','ง').Split('ง').Get($j).Contains('Unknown'))) `
-              -and (!($fieldToTest.Replace('<br>','ง').Split('ง').Get($j).Contains('n/a'))) `
+            if (   ($fieldToTest.Replace('<br>','ยง').Split('ยง').Get($j) -ne '') `
+              -and (!($fieldToTest.Replace('<br>','ยง').Split('ยง').Get($j).Contains('Partner'))) `
+              -and (!($fieldToTest.Replace('<br>','ยง').Split('ยง').Get($j).Contains('Unknown'))) `
+              -and (!($fieldToTest.Replace('<br>','ยง').Split('ยง').Get($j).Contains('n/a'))) `
                )
             {
-                [bool]$dfsrFolderEnabled = $dfsrFolderEnabled -and $fieldToTest.Replace('<br>','ง').Split('ง').Get($j)
+                [bool]$dfsrFolderEnabled = $dfsrFolderEnabled -and $fieldToTest.Replace('<br>','ยง').Split('ยง').Get($j)
             }
         }
 
@@ -1260,15 +1260,15 @@ function Set-ValueAddedHtmlInfo
     elseif ($typeOfTest -eq 'DFSRConnectionEnabled')
     {
         [bool]$dfsrConnectionEnabled = $true
-        for ($j=0; $j -lt $fieldToTest.Replace('<br>','ง').Split('ง').Count; $j++)
+        for ($j=0; $j -lt $fieldToTest.Replace('<br>','ยง').Split('ยง').Count; $j++)
         {
-            if (   ($fieldToTest.Replace('<br>','ง').Split('ง').Get($j) -ne '') `
-              -and (!($fieldToTest.Replace('<br>','ง').Split('ง').Get($j).Contains('Partner'))) `
-              -and (!($fieldToTest.Replace('<br>','ง').Split('ง').Get($j).Contains('Unknown'))) `
-              -and (!($fieldToTest.Replace('<br>','ง').Split('ง').Get($j).Contains('n/a'))) `
+            if (   ($fieldToTest.Replace('<br>','ยง').Split('ยง').Get($j) -ne '') `
+              -and (!($fieldToTest.Replace('<br>','ยง').Split('ยง').Get($j).Contains('Partner'))) `
+              -and (!($fieldToTest.Replace('<br>','ยง').Split('ยง').Get($j).Contains('Unknown'))) `
+              -and (!($fieldToTest.Replace('<br>','ยง').Split('ยง').Get($j).Contains('n/a'))) `
                )
             {
-                [bool]$dfsrConnectionEnabled = $dfsrConnectionEnabled -and $fieldToTest.Replace('<br>','ง').Split('ง').Get($j)
+                [bool]$dfsrConnectionEnabled = $dfsrConnectionEnabled -and $fieldToTest.Replace('<br>','ยง').Split('ยง').Get($j)
             }
         }
 
@@ -1543,9 +1543,9 @@ function Set-ValueAddedHtmlInfo
         # Sites Links seen in AD
         [array]$siteLinksInAD = @()
         $siteLinksInAD += ''
-        for ($k=0; $k -lt $fieldToTest.Replace('<br>','ง').Split('ง').Count; $k++)
+        for ($k=0; $k -lt $fieldToTest.Replace('<br>','ยง').Split('ยง').Count; $k++)
         {
-            $siteLinkInAD = $fieldToTest.Replace('<br>','ง').Split('ง').Get($k)
+            $siteLinkInAD = $fieldToTest.Replace('<br>','ยง').Split('ยง').Get($k)
             if ($siteLinkInAD.Length -gt 0)
             {
                 $siteLinksInAD += $siteLinkInAD
@@ -1629,9 +1629,9 @@ function Set-ValueAddedHtmlInfo
         #Subnets seen in AD
         [array]$subnetsInAD = @()
         $subnetsInAD += ''
-         for ($k=0; $k -lt $fieldToTest.Replace('<br>','ง').Split('ง').Count; $k++)
+         for ($k=0; $k -lt $fieldToTest.Replace('<br>','ยง').Split('ยง').Count; $k++)
         {
-            $subnetInAD = $fieldToTest.Replace('<br>','ง').Split('ง').Get($k)
+            $subnetInAD = $fieldToTest.Replace('<br>','ยง').Split('ยง').Get($k)
             if ($subnetInAD.Length -gt 0)
             {
                 $subnetsInAD += $subnetInAD
@@ -1705,9 +1705,9 @@ function Set-ValueAddedHtmlInfo
         # Adjacent Sites seen in AD
         [array]$adjacentSitesInAD = @()
         $adjacentSitesInAD += ''
-        for ($k=0; $k -lt $fieldToTest.Replace('<br>','ง').Split('ง').Count; $k++)
+        for ($k=0; $k -lt $fieldToTest.Replace('<br>','ยง').Split('ยง').Count; $k++)
         {
-            $adjacentSiteInAD = $fieldToTest.Replace('<br>','ง').Split('ง').Get($k)
+            $adjacentSiteInAD = $fieldToTest.Replace('<br>','ยง').Split('ยง').Get($k)
             if ($adjacentSiteInAD.Length -gt 0)
             {
                 $adjacentSitesInAD += $adjacentSiteInAD
@@ -1848,7 +1848,7 @@ Write-Log ('--------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------
 Write-Log ('Creating the list of responding DCs')
 # Get the current DC
-[string]$currentServer = ([ADSI]“LDAP://RootDSE”).dnshostname.ToString()
+[string]$currentServer = ([ADSI]"LDAP://RootDSE").dnshostname.ToString()
 [string]$currentServer = $currentServer.Split('.').Get(0).ToLower()
 
 # Create the list of DCs to test
@@ -2012,8 +2012,8 @@ foreach ($domain in $domains)
         [long]$ridAvailablePool = [long][string]$rid.item(0).Properties.ridavailablepool
         [long]$TotalSIDS = $ridAvailablePool / ([math]::Pow(2,32))
         [long]$temp64Val = $TotalSIDS * ([math]::Pow(2,32))
-        [long]$currentRidPoolCount = $ridAvailablePool – $temp64Val
-        [long]$ridsRemaining = $totalSIDS – $currentRidPoolCount
+        [long]$currentRidPoolCount = $ridAvailablePool - $temp64Val
+        [long]$ridsRemaining = $totalSIDS - $currentRidPoolCount
         [double]$ridsIssuedPcntOfTotal = ( $currentRIDPoolCount / $totalSIDS )
         [string]$ridsIssuedPercentofTotal = "{0:P3}" -f $RIDsIssuedPcntOfTotal
         [double]$ridsRemainingPcntOfTotal = ( $ridsRemaining / $totalSIDS )
@@ -2642,7 +2642,7 @@ foreach ($DC in $DCs)
         Write-Log ('Trying to get OS name of ' + $dc.ToLower())
         [string]$os = Get-DcOsName -dc $dc
         Write-Log ('    OS name of ' + $dc.ToLower() + ' is ' + $os)
-        #[string]$os = $os.Replace('','').Replace('ฎ','').Replace('ฉ','').Replace('Windows ','').Replace('Server ','')
+        #[string]$os = $os.Replace('โข','').Replace('ยฎ','').Replace('ยฉ','').Replace('Windows ','').Replace('Server ','')
 
         Write-Log ('Trying to get Global Catalog Info for  ' + $dc.ToLower())
         [string]$isGlobalCatalog = Get-DcGlobalCatalogInfo -dc $dc
