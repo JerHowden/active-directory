@@ -28,11 +28,13 @@ Function Get-UsersStatistics {
     $Date = [DateTime]::ParseExact($DateString, 'yyyy-MM-dd HH:mm:ss', $null)
 
     # Totals
-    $Users = Get-ADUser -Filter * -Properties name,lastlogondate,enabled -Server $Server
+    $Users = Get-ADUser -Filter * -Properties name,lastlogondate,enabled,admincount -Server $Server
     $EnabledUsers = $Users | Where-Object {$_.enabled}
+    $AdminUsers = $Users | Where-Object {$_.admincount -eq 1}
     $TotalStatistics = [ordered]@{
         'Total User Objects:' = ($Users).count
         'Enabled User Objects:' = ($EnabledUsers).count
+        'Admin User Objects:' = ($AdminUsers).count
         'Total Groups:' = (Get-ADGroup -Filter * -Server $Server).count
         'Empty Groups:' = (Get-ADGroup -Filter * -Server $Server -Properties Members | Where-Object {-not $_.members}).count
     }
@@ -313,6 +315,7 @@ Function Invoke-ADDiscovery {
 
     Begin {
 
+        $RootPath = Split-Path $PSScriptRoot
         $Date = Get-Date
         $DiscoveryArray = @()
 
@@ -344,10 +347,10 @@ Function Invoke-ADDiscovery {
     End {
         # Write-Host $DiscoveryArray
         If($Export) {
-            $DiscoveryArray | Export-Csv -Path ((Get-Location).Path + '\results\Discovery_' + ($Date).ToString('yyyy-MM-dd_HH-mm-ss') + '.csv') -NoTypeInformation
+            $DiscoveryArray | Export-Csv -Path ($RootPath + '\results\Discovery_' + ($Date).ToString('yyyy-MM-dd_HH-mm-ss') + '.csv') -NoTypeInformation
         }
         return $DiscoveryArray
     }
 }
 
-'prod.ncidemo.com', 'prod.ncidemo.com', 'prod.ncidemo.com' | Invoke-ADDiscovery -DomainController 'DC01' -Export
+'prod.ncidemo.com', 'prod.ncidemo.com', 'prod.ncidemo.com' | Invoke-ADDiscovery -DomainController 'DC01'
