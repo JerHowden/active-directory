@@ -7,7 +7,7 @@ Function Create-DNSScavengingRecordsReport
     $DC = (Get-ADDomainController).Name
     $DNSRoot = (Get-ADDomain).DNSRoot
     $DNSRecords = Get-DnsServerResourceRecord -ComputerName $DC -ZoneName $DNSRoot
-    $DateThershold = (Get-Date).AddDays(-14)
+    $DateThreshold = (Get-Date).AddDays(-14)
     $DNSArray = @()
     ForEach ($DNSRecord in $DNSRecords)
     {
@@ -31,7 +31,7 @@ Function Create-DNSScavengingRecordsReport
             Add-Member -InputObject $DNSObject -MemberType 'NoteProperty' -Name 'IP' -Value $ComputerIP
             Add-Member -InputObject $DNSObject -MemberType 'NoteProperty' -Name 'Timestamp' -Value $DNSRecord.Timestamp
             Add-Member -InputObject $DNSObject -MemberType 'NoteProperty' -Name 'OS' -Value $ComputerOS
-            If (($DNSRecord.Timestamp) -lt $DateThershold)
+            If (($DNSRecord.Timestamp) -lt $DateThreshold)
             {
                 If ($Ping)
                 {

@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<assessment>
+    <metadata>
+        <client></client>
+        <date format="ISO-8601"></date>
+    </metadata>
+    <cloud>
+        <office365>
+            <azureADConnect></azureADConnect>
+        </office365>
+    </cloud>
+    <forest>
+        <fsmoRoles></fsmoRoles>
+        <forestFunctionalLevel></forestFunctionalLevel>
+        <trusts></trusts>
+    </forest>
+    <domains>
+        <domain name="test.example.com">
+            <config>
+                <architecture>
+                    <domainControllerPlacement></domainControllerPlacement>
+                    <firewallAndPortUsage></firewallAndPortUsage>
+                    <ldap></ldap>
+                </architecture>
+                <sitesAndSubnets></sitesAndSubnets>
+                <domainsAndTrusts></domainsAndTrusts>
+                <domainFunctionalLevel></domainFunctionalLevel>
+                <recycleBinStatus>
+                    <backupStatus>
+                        <objectLevelBackupAndRecovery></objectLevelBackupAndRecovery>
+                    </backupStatus>
+                </recycleBinStatus>
+                <upnSuffixes></upnSuffixes>
+                <spnUsage>
+                    <duplicateSPNCount></duplicateSPNCount>
+                </spnUsage>
+                <schemaVersion></schemaVersion>
+                <timeService></timeService>
+            </config>
+            <workstations>
+                <count></count>
+                <inactive></inactive>
+                <operatingSystems>
+                    <operatingSystem>
+                        <name>Windows Example</name>
+                        <count></count>
+                        <endOfLifeSupport format="ISO-8601"></endOfLifeSupport>
+                        <patching></patching>
+                    </operatingSystem>
+                    <!-- operatingSystem 2... -->
+                    <!-- operatingSystem etc... -->
+                </operatingSystems>
+            </workstations>
+            <users>
+                <count></count>
+                <privilegedAccess></privilegedAccess>
+                <notRequiringPasswords></notRequiringPasswords>
+                <inactive>
+                    <days90></days90>
+                    <days180></days180>
+                    <!-- could have more -->
+                </inactive>
+            </users>
+            <servers>
+                <count></count>
+                <inactive></inactive>
+                <operatingSystems>
+                    <operatingSystem>
+                        <name>Windows Example</name>
+                        <count></count>
+                        <endOfLifeSupport format="ISO-8601"></endOfLifeSupport>
+                        <patching></patching>
+                    </operatingSystem>
+                    <!-- operatingSystem 2... -->
+                    <!-- operatingSystem etc... -->
+                </operatingSystems>
+            </servers>
+            <groups>
+                <count></count>
+                <inactive></inactive>
+                <nested></nested>
+                <looped></looped>
+                <shadowAccess></shadowAccess>
+            </groups>
+            <gpos>
+                <advancedAuditPolicies></advancedAuditPolicies>
+                <count></count>
+                <duplicate></duplicate>
+                <unlinked></unlinked>
+                <misconfigured></misconfigured>
+                <permissions></permissions>
+                <restrictedGroupsUsage></restrictedGroupsUsage>
+                <esaeTierFramework></esaeTierFramework>
+                <hardeningBaseline></hardeningBaseline>
+                <wmiFiltering></wmiFiltering>
+            </gpos>
+            <ous>
+                <count></count>
+                <empty></empty>
+                <blockedInheritance></blockedInheritance>
+                <permission></permission>
+            </ous>
+            <security>
+                <permissions></permissions>
+                <adminSDHolder></adminSDHolder>
+                <localAdminPasswordSolution></localAdminPasswordSolution>
+            </security>
+        </domain>
+        <!-- domain 2... -->
+        <!-- domain etc... -->
+    </domains>
+    <applications>
+        <adfs></adfs>
+        <exchange></exchange>
+        <dhcp></dhcp>
+        <dns>
+            <config>
+                <sec></sec>
+                <scavenging>
+                    <staleRecordCount></staleRecordCount>
+                </scavenging>
+                <conditionalForwarders></conditionalForwarders>
+            </config>
+        </dns>
+        <pki></pki>
+        <sccm></sccm>
+    </applications>
+    <governance>
+        <processReview></processReview>
+        <documentation></documentation>
+    </governance>
+    <tools>
+        <provisioning></provisioning>
+        <gpoAdmin></gpoAdmin>
+        <auditing></auditing>
+        <pam></pam>
+        <threatDetectionAndResponse></threatDetectionAndResponse>
+        <userBehaviorAnalysis></userBehaviorAnalysis>
+        <eventLogs></eventLogs>
+        <backupAndRecovery></backupAndRecovery>
+    </tools>
+</assessment>
