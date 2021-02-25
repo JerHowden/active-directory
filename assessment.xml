@@ -80,7 +80,7 @@
                 <inactive></inactive>
                 <nested></nested>
                 <looped></looped>
-                <shadowAccess></shadowAccess>
+                <shadowAccess></shadowAccess> 
             </groups>
             <gpos>
                 <advancedAuditPolicies></advancedAuditPolicies>

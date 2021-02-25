@@ -2,7 +2,7 @@
 
 
 # AD Users/Groups
-Function Get-UsersStatistics {
+$GetUsersStatistics = { Function Get-UsersStatistics {
 
     [CmdletBinding()]
     Param(
@@ -52,10 +52,10 @@ Function Get-UsersStatistics {
 
     return ($TotalStatistics + $InactiveStatistics)
 
-}
+} }
 
 #AD Endpoints
-Function Get-EndpointStatistics {
+$GetEndpointStatistics = { Function Get-EndpointStatistics {
 
     [CmdletBinding()]
     Param(
@@ -139,10 +139,10 @@ Function Get-EndpointStatistics {
     
     return ($ComputerStatistics + $ComputersInactiveStatistics + $ComputerOSCount)
 
-}
+} }
 
 # OUs with Blocked Inheritance
-Function Get-OUsWithBlockedInheritanceCount {
+$GetOUsWithBlockedInheritanceCount = { Function Get-OUsWithBlockedInheritanceCount {
     
     [CmdletBinding()]
     Param(
@@ -160,10 +160,10 @@ Function Get-OUsWithBlockedInheritanceCount {
   
     return @{ 'OUs with Blocked Inheritance:' = $OUs.count }
     
-}
+} }
 
 # Empty OUs
-Function Get-EmptyOUsCount {
+$GetEmptyOUsCount = { Function Get-EmptyOUsCount {
 
     [CmdletBinding()]
     Param(
@@ -182,10 +182,10 @@ Function Get-EmptyOUsCount {
     
     return @{ 'Empty OUs:' = $OUs.count }
 
-}
+} }
     
 # Unlinked GPOs
-Function Get-UnlinkedGPOsCount {
+$GetUnlinkedGPOsCount = { Function Get-UnlinkedGPOsCount {
 
     [CmdletBinding()]
     Param(
@@ -208,10 +208,10 @@ Function Get-UnlinkedGPOsCount {
         'Unlinked GPOs:' = $UnlinkedCount
     }
 
-}
+} }
 
 # Duplicate SPNs
-Function Get-DuplicateSPNsCount {
+$GetDuplicateSPNsCount = { Function Get-DuplicateSPNsCount {
     
     [CmdletBinding()]
     Param(
@@ -251,7 +251,7 @@ Function Get-DuplicateSPNsCount {
         'Duplicate SPNs:' = $DuplicateCount
     }
 
-}
+} }
 
 
 <#
@@ -332,13 +332,43 @@ Function Invoke-ADDiscovery {
             'Date:' = ($Date).ToString('yyyy-MM-dd HH:mm:ss')
         }
 
-        # Make Discovery Checks
-        $Discovery += (Get-UsersStatistics -Server $Server -DateString ($Date).ToString('yyyy-MM-dd HH:mm:ss') -InactiveThresholds $InactiveThresholds)
-        $Discovery += (Get-EndpointStatistics -Server $Server -DateString ($Date).ToString('yyyy-MM-dd HH:mm:ss') -InactiveThresholds $InactiveThresholds)
-        $Discovery += (Get-OUsWithBlockedInheritanceCount -Server $Server -DefaultNamingContext $RootDSE.defaultNamingContext)
-        $Discovery += (Get-EmptyOUsCount -Server $Server -DefaultNamingContext $RootDSE.defaultNamingContext)
-        $Discovery += (Get-UnlinkedGPOsCount -Domain $Domain)
-        $Discovery += (Get-DuplicateSPNsCount -Server $Server)
+        # Start Discovery Jobs
+        $UsersStatisticsJob = Start-Job -InitializationScript $GetUsersStatistics -ScriptBlock {
+            param($Server, $Date, $InactiveThresholds)
+            Get-UsersStatistics -Server $Server -DateString ($Date).ToString('yyyy-MM-dd HH:mm:ss') -InactiveThresholds $InactiveThresholds 
+        } -ArgumentList $Server,$Date,$InactiveThresholds
+        $EndpointStatisticsJob = Start-Job -InitializationScript $GetEndpointStatistics -ScriptBlock { 
+            param($Server, $Date, $InactiveThresholds)
+            Get-EndpointStatistics -Server $Server -DateString ($Date).ToString('yyyy-MM-dd HH:mm:ss') -InactiveThresholds $InactiveThresholds 
+        } -ArgumentList $Server,$Date,$InactiveThresholds
+        $OUsWithBlockedInheritanceCountJob = Start-Job -InitializationScript $GetOUsWithBlockedInheritanceCount -ScriptBlock { 
+            param($Server, $DefaultNamingContext)
+            Get-OUsWithBlockedInheritanceCount -Server $Server -DefaultNamingContext $DefaultNamingContext 
+        } -ArgumentList $Server,$RootDSE.defaultNamingContext
+        $EmptyOUsCountJob = Start-Job -InitializationScript $GetEmptyOUsCount -ScriptBlock { 
+            param($Server, $DefaultNamingContext)
+            Get-EmptyOUsCount -Server $Server -DefaultNamingContext $DefaultNamingContext 
+        } -ArgumentList $Server,$RootDSE.defaultNamingContext
+        $UnlinkedGPOsCountJob = Start-Job -InitializationScript $GetUnlinkedGPOsCount -ScriptBlock { 
+            param($Domain)
+            Get-UnlinkedGPOsCount -Domain $Domain 
+        } -ArgumentList $Domain
+        $DuplicateSPNsCountJob = Start-Job -InitializationScript $GetDuplicateSPNsCount -ScriptBlock { 
+            param($Server)
+            Get-DuplicateSPNsCount -Server $Server 
+        } -ArgumentList $Server
+
+        # Wait for all Discovery Jobs
+        Wait-Job -Job $UsersStatisticsJob,$EndpointStatisticsJob,$OUsWithBlockedInheritanceCountJob,$EmptyOUsCountJob,$UnlinkedGPOsCountJob,$DuplicateSPNsCountJob
+
+        # Receive Discovery Jobs
+        $Discovery += Receive-Job -Job $UsersStatisticsJob
+        $Discovery += Receive-Job -Job $EndpointStatisticsJob
+        $Discovery += Receive-Job -Job $OUsWithBlockedInheritanceCountJob
+        $Discovery += Receive-Job -Job $EmptyOUsCountJob
+        $Discovery += Receive-Job -Job $UnlinkedGPOsCountJob
+        $Discovery += Receive-Job -Job $DuplicateSPNsCountJob
+        
         # $Discovery | Format-Table -AutoSize
         $DiscoveryArray += [pscustomobject]$Discovery
 
@@ -353,4 +383,4 @@ Function Invoke-ADDiscovery {
     }
 }
 
-'prod.ncidemo.com', 'prod.ncidemo.com', 'prod.ncidemo.com' | Invoke-ADDiscovery -DomainController 'DC01'
+'prod.ncidemo.com', 'prod.ncidemo.com', 'prod.ncidemo.com' | Invoke-ADDiscovery -DomainController 'DC01' | Format-Table -AutoSize
