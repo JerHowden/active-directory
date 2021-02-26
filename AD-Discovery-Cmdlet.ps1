@@ -309,6 +309,10 @@ Function Invoke-ADDiscovery {
         [int[]]$InactiveThresholds = (90,180,360),
 
         [Parameter(
+            HelpMessage='Maximum number of AD Objects to return.')]
+        [int]$Limit,
+
+        [Parameter(
             HelpMessage='Export to CSV.')]
         [switch]$Export
     )
@@ -383,4 +387,4 @@ Function Invoke-ADDiscovery {
     }
 }
 
-'prod.ncidemo.com', 'prod.ncidemo.com', 'prod.ncidemo.com' | Invoke-ADDiscovery -DomainController 'DC01' | Format-Table -AutoSize
+'prod.ncidemo.com', 'prod.ncidemo.com', 'prod.ncidemo.com' | Invoke-ADDiscovery -DomainController 'DC01' -Export
