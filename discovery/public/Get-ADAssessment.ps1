@@ -17,9 +17,6 @@
 
 #>
 
-
-Function Build-AssessmentXML {}
-
 Function Get-ADAssessment {
 
     [CmdletBinding()]
@@ -42,10 +39,27 @@ Function Get-ADAssessment {
         [int]$Limit
     )
 
+    # TODO:
+    # - Allocate Applications Jobs
+    # - Allocate Cloud Jobs
+    # - Allocate Governance Jobs
+    # - Allocate Tools Jobs
 
+    Begin {
 
-    Begin {}
-    Process {}
-    End {}
+        # Start Forest Jobs
+
+    }
+
+    Process {
+
+        # Start Domain Jobs
+
+    }
+    End {
+
+        # Compile and Build XML
+
+    }
 
 }
