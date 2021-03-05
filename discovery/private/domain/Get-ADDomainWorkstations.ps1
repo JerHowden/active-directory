@@ -10,3 +10,18 @@ function Get-ADDomainWorkspaces {
     End {}
 
 }
+
+<#
+    @{
+        count = [int]
+        inactive = [int]
+        operatingSystems = @(
+            @{
+                name = [string]
+                count = [int]
+                endOfLifeSupport = [date]
+                patching = [???]
+            }, ...
+        )
+    }
+#>

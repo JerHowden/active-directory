@@ -10,20 +10,63 @@
         </office365>
     </cloud>
     <forest>
-        <fsmoRoles></fsmoRoles>
-        <forestFunctionalLevel></forestFunctionalLevel>
-        <trusts></trusts>
+        <fsmoRoles>
+            <!-- list of 1 or more servers (fqdn) -->
+            <!-- ... -->
+        </fsmoRoles>
+        <forestFunctionalLevel>
+            <!-- forest version [string] -->
+        </forestFunctionalLevel>
+        <trusts>
+            <!-- list of 0 or more domains -->
+            <!-- ... -->
+        </trusts>
     </forest>
     <domains>
         <domain name="test.example.com">
             <config>
-                <architecture>
-                    <domainControllerPlacement></domainControllerPlacement>
-                    <firewallAndPortUsage></firewallAndPortUsage>
-                    <ldap></ldap>
-                </architecture>
-                <sitesAndSubnets></sitesAndSubnets>
-                <domainsAndTrusts></domainsAndTrusts>
+                <sitesAndServices>
+                    <siteLinks>
+                        <!-- from IP only -->
+                        <siteLink>
+                            <name></name>
+                            <cost></cost>
+                            <replicationInterval></replicationInterval>
+                            <sites>
+                                <site>
+                                    <!-- NewYork -->
+                                </site>
+                            </sites>
+                        </siteLink>
+                        <!-- siteLink... -->
+                    </siteLinks>
+                    <subnets>
+                        <subnet>
+                            <!-- [ip] -->
+                        </subnet>
+                    </subnets>
+                    <sites>
+                        <site name='NewYork'>
+                            <subnets>
+                                <subnet>123.1231.132</subnet>
+                                <!-- subnet... -->
+                            </subnets>
+                            <servers>
+                                <server>
+                                    DC01
+                                </server>
+                                <!-- server... -->
+                            </servers>
+                        </site>
+                        <!-- site... -->
+                    </sites>
+                </sitesAndServices>
+                <domainsAndTrusts>
+                    <trust>
+                        <target></target>
+                        <direction></direction>
+                    </trust>
+                </domainsAndTrusts>
                 <domainFunctionalLevel></domainFunctionalLevel>
                 <recycleBinStatus>
                     <backupStatus>
@@ -38,8 +81,12 @@
                 <timeService></timeService>
             </config>
             <workstations>
-                <count></count>
-                <inactive></inactive>
+                <count>
+                    <!-- [int] -->
+                </count>
+                <inactive>
+                    <!-- [int] -->
+                </inactive>
                 <operatingSystems>
                     <operatingSystem>
                         <name>Windows Example</name>
@@ -101,9 +148,12 @@
                 <permission></permission>
             </ous>
             <security>
-                <permissions></permissions>
                 <adminSDHolder></adminSDHolder>
+                <firewallAndPortUsage></firewallAndPortUsage>
+                <ldaps></ldaps>
+                <ntlmSettings></ntlmSettings>
                 <localAdminPasswordSolution></localAdminPasswordSolution>
+                <permissions></permissions>
             </security>
         </domain>
         <!-- domain 2... -->
