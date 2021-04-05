@@ -43,7 +43,7 @@ $GetUsersStatistics = { Function Get-UsersStatistics {
     $InactiveStatistics = [ordered]@{}
     $ThresholdDates = $InactiveThresholds | ForEach-Object { $Date.AddDays(-1 * $_) }
     for($i=0; $i -lt $InactiveThresholds.Count; $i++) {
-        $ThresholdCount = ($UsersEnabled | Where-Object {$_.lastlogondate -lt $ThresholdDates[$i]}).count
+        $ThresholdCount = ($EnabledUsers | Where-Object {$_.lastlogondate -lt $ThresholdDates[$i]}).count
         if(!$ThresholdCount) {
             $ThresholdCount = 0
         }
@@ -362,6 +362,14 @@ Function Invoke-ADDiscovery {
             Get-DuplicateSPNsCount -Server $Server 
         } -ArgumentList $Server
 
+        $Jobs = Get-Job | ? { $_.state -eq 'Running' }
+        $RunningJobs = $Jobs.Count
+        while($RunningJobs -gt 0) {
+            Write-Progress -Activity 'Discovery' -Status "$RunningJobs Jobs Left:" -PercentComplete (($Jobs.Count-$RunningJobs) / $Jobs.Count*100)
+            $RunningJobs = (Get-Job | ? { $_.state -eq 'Running' }).Count
+            Start-Sleep -Seconds 1
+        }
+
         # Wait for all Discovery Jobs
         Wait-Job -Job $UsersStatisticsJob,$EndpointStatisticsJob,$OUsWithBlockedInheritanceCountJob,$EmptyOUsCountJob,$UnlinkedGPOsCountJob,$DuplicateSPNsCountJob
 
@@ -387,4 +395,4 @@ Function Invoke-ADDiscovery {
     }
 }
 
-'prod.ncidemo.com', 'prod.ncidemo.com', 'prod.ncidemo.com' | Invoke-ADDiscovery -DomainController 'DC01' -Export
+'prod.ncidemo.com' | Invoke-ADDiscovery -DomainController 'DC01' -Export

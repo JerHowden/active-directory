@@ -53,7 +53,13 @@ Function Get-ADAssessment {
 
     Process {
 
-        # Start Domain Jobs
+        # - DOMAIN -
+            # Variables
+            $Server = $DomainController + '.' + $Domain
+            $RootDSE = Get-ADRootDSE -Server $Server
+
+            # Start Assessment
+            #Get-ADDomainAssessment 
 
     }
     End {
