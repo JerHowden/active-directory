@@ -158,7 +158,7 @@ $GetOUsWithBlockedInheritanceCount = { Function Get-OUsWithBlockedInheritanceCou
     $OUs = Get-ADOrganizationalUnit -SearchBase $DefaultNamingContext -Filter * -Server $Server `
         | Where-Object {(Get-GPInheritance $_.DistinguishedName).GpoInheritanceBlocked -eq 'Yes'} `
   
-    return @{ 'OUs with Blocked Inheritance:' = $OUs.count }
+    return [ordered]@{ 'OUs with Blocked Inheritance:' = $OUs.count }
     
 } }
 
@@ -180,7 +180,7 @@ $GetEmptyOUsCount = { Function Get-EmptyOUsCount {
      | ForEach-Object { If (!(Get-ADObject -Filter * -SearchBase $_ -SearchScope OneLevel -Server $Server)){$_} } `
      | Sort-Object Name | Format-Table Name,DistinguishedName -AutoSize -Wrap
     
-    return @{ 'Empty OUs:' = $OUs.count }
+    return [ordered]@{ 'Empty OUs:' = $OUs.count }
 
 } }
     
@@ -203,7 +203,7 @@ $GetUnlinkedGPOsCount = { Function Get-UnlinkedGPOsCount {
         }
     }
     
-    return @{
+    return [ordered]@{
         'Total GPOs:' = $GPOs.Count
         'Unlinked GPOs:' = $UnlinkedCount
     }
@@ -223,13 +223,15 @@ $GetDuplicateSPNsCount = { Function Get-DuplicateSPNsCount {
     $AllSPNsObjects = Get-ADObject -Server $Server -Filter "(objectClass -eq 'user') -and (objectClass -eq 'computer')" -Properties sAMAccountName, servicePrincipalName | Where-Object servicePrincipalName -ne $null
     $SPNArray = @()
     $DuplicateCount = 0
-  
+    $Index = 0
+    $Total = $AllSPNsObjects.Count
+
     foreach ($SPNObject in $AllSPNsObjects) {
         $SamAccountName = $SPNObject.SamAccountName
         $ServicePrincipalNames = $SPNObject.ServicePrincipalName
         foreach ($ServicePrincipalName in $ServicePrincipalNames) {
-            if ($SPNArray.ServicePrincipalName -like "$ServicePrincipalName") {
-                $MatchedSPNs = $SPNArray.ServicePrincipalName -like "$ServicePrincipalName"
+            $MatchedSPNs = $SPNArray.ServicePrincipalName -like "$ServicePrincipalName"
+            if ($MatchedSPNs) {
                 foreach ($MatchSPN in $MatchedSPNs) {
                     $MatchSamAccountName = $MatchSPN.SamAccountName
                     if ($MatchSamAccountName -ne $SamAccountName) {
@@ -237,17 +239,17 @@ $GetDuplicateSPNsCount = { Function Get-DuplicateSPNsCount {
                     }
                 }
             } else {
-                $Properties = @{
+                $SPNArray += [PSCustomObject]@{
                     "SamAccountName" = $SamAccountName
                     "ServicePrincipalName" = $ServicePrincipalName
                 }
-                $SPNArrayRow = New-Object PSObject -Property $Properties
-                $SPNArray += $SPNArrayRow
             }
         }
+        $Index++
+        Write-Progress -Id 1 -Activity 'SPN Duplicates' -Status " --- SPNs Scanned: $Index" -PercentComplete (($Total-$Index) / $Total*100)
     }
 
-    return @{
+    return [ordered]@{
         'Duplicate SPNs:' = $DuplicateCount
     }
 
@@ -366,8 +368,10 @@ Function Invoke-ADDiscovery {
         $RunningJobs = $Jobs.Count
         while($RunningJobs -gt 0) {
             Write-Progress -Activity 'Discovery' -Status "$RunningJobs Jobs Left:" -PercentComplete (($Jobs.Count-$RunningJobs) / $Jobs.Count*100)
-            $RunningJobs = (Get-Job | ? { $_.state -eq 'Running' }).Count
-            Start-Sleep -Seconds 1
+            $Jobs = Get-Job | ? { $_.state -eq 'Running' }
+            $RunningJobs = $Jobs.Count
+            Write-Host $Jobs
+            Start-Sleep -Seconds 10
         }
 
         # Wait for all Discovery Jobs
