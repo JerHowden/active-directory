@@ -27,7 +27,7 @@ $GetUsersStatistics = { Function Get-UsersStatistics {
 
     $Date = [DateTime]::ParseExact($DateString, 'yyyy-MM-dd HH:mm:ss', $null)
 
-    Write-Progress -Id 1 -Activity 'User Statistics' -Status " --- Scanning User Objects" -PercentComplete 1
+    Write-Progress -Id 1 -ParentId 0 -Activity 'User Statistics' -Status " --- Scanning User Objects" -PercentComplete 1
 
     # Totals
     $Users = Get-ADUser -Filter * -Properties name,lastlogondate,enabled,admincount -Server $Server
@@ -41,7 +41,7 @@ $GetUsersStatistics = { Function Get-UsersStatistics {
         'Empty Groups:' = (Get-ADGroup -Filter * -Server $Server -Properties Members | Where-Object {-not $_.members}).count
     }
 
-    Write-Progress -Id 1 -Activity 'User Statistics' -Status " --- Scanning Inactive Users" -PercentComplete 50
+    Write-Progress -Id 1 -ParentId 0 -Activity 'User Statistics' -Status " --- Scanning Inactive Users" -PercentComplete 50
 
     # Inactive Users
     $InactiveStatistics = [ordered]@{}
@@ -54,7 +54,7 @@ $GetUsersStatistics = { Function Get-UsersStatistics {
         $InactiveStatistics['Users ' + $InactiveThresholds[$i] + ' Days Inactive:'] = $ThresholdCount
     }
 
-    Write-Progress -Id 1 -Activity 'User Statistics' -Status " --- All Users Scanned" -PercentComplete 100
+    Write-Progress -Id 1 -ParentId 0 -Activity 'User Statistics' -Status " --- All Users Scanned" -PercentComplete 100
 
     return ($TotalStatistics + $InactiveStatistics)
 
@@ -86,7 +86,7 @@ $GetEndpointStatistics = { Function Get-EndpointStatistics {
 
     $Date = [DateTime]::ParseExact($DateString, 'yyyy-MM-dd HH:mm:ss', $null)
 
-    Write-Progress -Id 2 -Activity 'Endpoint Statistics' -Status " --- Scanning Computers" -PercentComplete 1
+    Write-Progress -Id 2 -ParentId 0 -Activity 'Endpoint Statistics' -Status " --- Scanning Computers" -PercentComplete 1
 
     # Totals
     $Computers = Get-ADComputer -Filter * -Properties name,operatingsystem,lastlogondate,passwordlastset -Server $Server
@@ -98,7 +98,7 @@ $GetEndpointStatistics = { Function Get-EndpointStatistics {
         'Disabled Computer Objects:' = ($ComputersDisabled).count
     }
 
-    Write-Progress -Id 2 -Activity 'Endpoint Statistics' -Status " --- Scanning Inactive Computers" -PercentComplete 33
+    Write-Progress -Id 2 -ParentId 0 -Activity 'Endpoint Statistics' -Status " --- Scanning Inactive Computers" -PercentComplete 33
 
     # Inactive Computers
     $ComputersInactiveStatistics = [ordered]@{}
@@ -118,7 +118,7 @@ $GetEndpointStatistics = { Function Get-EndpointStatistics {
         $ComputersInactiveStatistics['Computers ' + $InactiveThresholds[$i] + ' Days Since Password Set:'] = $ThresholdCount
     }
 
-    Write-Progress -Id 2 -Activity 'Endpoint Statistics' -Status " --- Scanning Operating Systems" -PercentComplete 66
+    Write-Progress -Id 2 -ParentId 0 -Activity 'Endpoint Statistics' -Status " --- Scanning Operating Systems" -PercentComplete 66
 
     # Operating Systems
     $ComputerOSCount = [ordered]@{
@@ -149,7 +149,7 @@ $GetEndpointStatistics = { Function Get-EndpointStatistics {
         }
     }
 
-    Write-Progress -Id 2 -Activity 'Endpoint Statistics' -Status " --- All Computers Scanned" -PercentComplete 100
+    Write-Progress -Id 2 -ParentId 0 -Activity 'Endpoint Statistics' -Status " --- All Computers Scanned" -PercentComplete 100
     
     return ($ComputerStatistics + $ComputersInactiveStatistics + $ComputerOSCount)
 
@@ -174,15 +174,13 @@ $GetOUsWithBlockedInheritanceCount = { Function Get-OUsWithBlockedInheritanceCou
 
     $Index = 0
     $Total = $OUs.Count
-       
-    $OUs | Where-Object {(Get-GPInheritance $_.DistinguishedName).GpoInheritanceBlocked -eq 'Yes'}
 
     $OUs | ForEach-Object {
         If ((Get-GPInheritance $_.DistinguishedName).GpoInheritanceBlocked -eq 'Yes') {
             $BlockedCount++
         }
         $Index++
-        Write-Progress -Id 3 -Activity 'Blocked OUs' -Status " --- OUs Scanned: $Index" -PercentComplete (($Total-$Index) / $Total*100)
+        Write-Progress -Id 3 -ParentId 0 -Activity 'Blocked OUs' -Status " --- OUs Scanned: $Index" -PercentComplete (100 * $Index / $Total)
     }
   
     return [ordered]@{ 'OUs with Blocked Inheritance:' = $BlockedCount }
@@ -214,7 +212,7 @@ $GetEmptyOUsCount = { Function Get-EmptyOUsCount {
             $EmptyCount++
         } 
         $Index++
-        Write-Progress -Id 4 -Activity 'Empty OUs' -Status " --- OUs Scanned: $Index" -PercentComplete (($Total-$Index) / $Total*100)
+        Write-Progress -Id 4 -ParentId 0 -Activity 'Empty OUs' -Status " --- OUs Scanned: $Index" -PercentComplete (100 * $Index / $Total)
     }
     
     return [ordered]@{ 'Empty OUs:' = $EmptyCount }
@@ -242,7 +240,7 @@ $GetUnlinkedGPOsCount = { Function Get-UnlinkedGPOsCount {
             # Write-Host $_.DisplayName
             $UnlinkedCount++
         }
-        Write-Progress -Id 5 -Activity 'Unlinked GPOs' -Status " --- GPOs Scanned: $Index" -PercentComplete (($Total-$Index) / $Total*100)
+        Write-Progress -Id 5 -ParentId 0 -Activity 'Unlinked GPOs' -Status " --- GPOs Scanned: $Index" -PercentComplete (100 * $Index / $Total)
     }
     
     return [ordered]@{
@@ -289,7 +287,7 @@ $GetDuplicateSPNsCount = { Function Get-DuplicateSPNsCount {
             }
         }
         $Index++
-        Write-Progress -Id 6 -Activity 'SPN Duplicates' -Status " --- SPNs Scanned: $Index" -PercentComplete (($Total-$Index) / $Total*100)
+        Write-Progress -Id 6 -ParentId 0 -Activity 'SPN Duplicates' -Status " --- SPNs Scanned: $Index" -PercentComplete (100 * $Index / $Total)
     }
 
     return [ordered]@{
@@ -298,6 +296,26 @@ $GetDuplicateSPNsCount = { Function Get-DuplicateSPNsCount {
 
 } }
 
+
+#Accepts a Job as a parameter and writes the latest progress of it
+function WriteJobProgress {
+
+    param($Job, $Id)
+ 
+    #Make sure the first child job exists
+    if($Job.ChildJobs[0].Progress -ne $null)
+    {
+        #Extracts the latest progress of the job and writes the progress
+        $jobProgressHistory = $Job.ChildJobs[0].Progress;
+        $latestProgress = $jobProgressHistory[$jobProgressHistory.Count - 1];
+        $latestPercentComplete = $latestProgress | Select -expand PercentComplete;
+        $latestActivity = $latestProgress | Select -expand Activity;
+        $latestStatus = $latestProgress | Select -expand StatusDescription;
+    
+        #When adding multiple progress bars, a unique ID must be provided. Here I am providing the JobID as this
+        Write-Progress -Id $Id -ParentId 0 -Activity $latestActivity -Status $latestStatus -PercentComplete $latestPercentComplete;
+    }
+}
 
 <#
     .Synopsis
@@ -359,7 +377,11 @@ Function Invoke-ADDiscovery {
 
         [Parameter(
             HelpMessage='Export to CSV.')]
-        [switch]$Export
+        [switch]$Export,
+
+        [Parameter(
+            HelpMessage='Running cmdlet in production.')]
+        [switch]$Prod
     )
 
     Begin {
@@ -382,6 +404,7 @@ Function Invoke-ADDiscovery {
         }
 
         # Start Discovery Jobs
+        Write-Progress -Id 0 -Activity 'Discovery' -Status "Initiating Jobs:" -PercentComplete 0
         $UsersStatisticsJob = Start-Job -InitializationScript $GetUsersStatistics -ScriptBlock {
             param($Server, $Date, $InactiveThresholds)
             Get-UsersStatistics -Server $Server -DateString ($Date).ToString('yyyy-MM-dd HH:mm:ss') -InactiveThresholds $InactiveThresholds 
@@ -408,17 +431,25 @@ Function Invoke-ADDiscovery {
         } -ArgumentList $Server
 
         $Jobs = Get-Job | ? { $_.state -eq 'Running' }
+        $TotalJobs = $Jobs.Count
         $RunningJobs = $Jobs.Count
         while($RunningJobs -gt 0) {
-            Write-Progress -Activity 'Discovery' -Status "$RunningJobs Jobs Left:" -PercentComplete (($Jobs.Count-$RunningJobs) / $Jobs.Count*100)
             $Jobs = Get-Job | ? { $_.state -eq 'Running' }
             $RunningJobs = $Jobs.Count
-            Write-Host $Jobs
-            Start-Sleep -Seconds 10
+            Write-Progress -Id 0 -Activity 'Discovery' -Status "$RunningJobs Jobs Left:" -PercentComplete ((100 * ($TotalJobs-$RunningJobs)) / $TotalJobs)
+
+            WriteJobProgress -Job $UsersStatisticsJob -Id 1
+            WriteJobProgress -Job $EndpointStatisticsJob -Id 2
+            WriteJobProgress -Job $OUsWithBlockedInheritanceCountJob -Id 3
+            WriteJobProgress -Job $EmptyOUsCountJob -Id 4
+            WriteJobProgress -Job $UnlinkedGPOsCountJob -Id 5
+            WriteJobProgress -Job $DuplicateSPNsCountJob -Id 6
+
+            Start-Sleep -Seconds 1
         }
 
         # Wait for all Discovery Jobs
-        Wait-Job -Job $UsersStatisticsJob,$EndpointStatisticsJob,$OUsWithBlockedInheritanceCountJob,$EmptyOUsCountJob,$UnlinkedGPOsCountJob,$DuplicateSPNsCountJob
+        # Wait-Job -Job $UsersStatisticsJob,$EndpointStatisticsJob,$OUsWithBlockedInheritanceCountJob,$EmptyOUsCountJob,$UnlinkedGPOsCountJob,$DuplicateSPNsCountJob
 
         # Receive Discovery Jobs
         $Discovery += Receive-Job -Job $UsersStatisticsJob
@@ -436,10 +467,18 @@ Function Invoke-ADDiscovery {
     End {
         # Write-Host $DiscoveryArray
         If($Export) {
-            $DiscoveryArray | Export-Csv -Path ($RootPath + '\results\Discovery_' + ($Date).ToString('yyyy-MM-dd_HH-mm-ss') + '.csv') -NoTypeInformation
+            If($Prod) {
+                $DiscoveryArray | Export-Csv -Path ($PSScriptRoot + '\AD-Discovery_' + ($Date).ToString('yyyy-MM-dd_HH-mm-ss') + '.csv') -NoTypeInformation
+            } Else {
+                $DiscoveryArray | Export-Csv -Path ($RootPath + '\results\Discovery_' + ($Date).ToString('yyyy-MM-dd_HH-mm-ss') + '.csv') -NoTypeInformation
+            }
         }
         return $DiscoveryArray
     }
 }
 
+# Test
 'prod.ncidemo.com' | Invoke-ADDiscovery -DomainController 'DC01' -Export
+
+# Prod
+# 'novelis.biz', 'aleris.biz' | Invoke-ADDiscovery -DomainController 'DC01' -Export -Prod
