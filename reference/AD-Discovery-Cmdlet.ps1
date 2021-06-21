@@ -27,7 +27,7 @@ $GetUsersStatistics = { Function Get-UsersStatistics {
 
     $Date = [DateTime]::ParseExact($DateString, 'yyyy-MM-dd HH:mm:ss', $null)
 
-    Write-Progress -Id 1 -ParentId 0 -Activity 'User Statistics' -Status " --- Scanning User Objects" -PercentComplete 1
+    Write-Progress -Id 10 -ParentId 1 -Activity 'User Statistics' -Status " --- Scanning User Objects" -PercentComplete 1
 
     # Totals
     $Users = Get-ADUser -Filter * -Properties name,lastlogondate,enabled,admincount -Server $Server
@@ -41,7 +41,7 @@ $GetUsersStatistics = { Function Get-UsersStatistics {
         'Empty Groups:' = (Get-ADGroup -Filter * -Server $Server -Properties Members | Where-Object {-not $_.members}).count
     }
 
-    Write-Progress -Id 1 -ParentId 0 -Activity 'User Statistics' -Status " --- Scanning Inactive Users" -PercentComplete 50
+    Write-Progress -Id 10 -ParentId 1 -Activity 'User Statistics' -Status " --- Scanning Inactive Users" -PercentComplete 50
 
     # Inactive Users
     $InactiveStatistics = [ordered]@{}
@@ -54,7 +54,7 @@ $GetUsersStatistics = { Function Get-UsersStatistics {
         $InactiveStatistics['Users ' + $InactiveThresholds[$i] + ' Days Inactive:'] = $ThresholdCount
     }
 
-    Write-Progress -Id 1 -ParentId 0 -Activity 'User Statistics' -Status " --- All Users Scanned" -PercentComplete 100
+    Write-Progress -Id 10 -ParentId 1 -Activity 'User Statistics' -Status " --- All Users Scanned" -PercentComplete 100
 
     return ($TotalStatistics + $InactiveStatistics)
 
@@ -86,7 +86,7 @@ $GetEndpointStatistics = { Function Get-EndpointStatistics {
 
     $Date = [DateTime]::ParseExact($DateString, 'yyyy-MM-dd HH:mm:ss', $null)
 
-    Write-Progress -Id 2 -ParentId 0 -Activity 'Endpoint Statistics' -Status " --- Scanning Computers" -PercentComplete 1
+    Write-Progress -Id 20 -ParentId 2 -Activity 'Endpoint Statistics' -Status " --- Scanning Computers" -PercentComplete 1
 
     # Totals
     $Computers = Get-ADComputer -Filter * -Properties name,operatingsystem,lastlogondate,passwordlastset -Server $Server
@@ -98,7 +98,7 @@ $GetEndpointStatistics = { Function Get-EndpointStatistics {
         'Disabled Computer Objects:' = ($ComputersDisabled).count
     }
 
-    Write-Progress -Id 2 -ParentId 0 -Activity 'Endpoint Statistics' -Status " --- Scanning Inactive Computers" -PercentComplete 33
+    Write-Progress -Id 20 -ParentId 2 -Activity 'Endpoint Statistics' -Status " --- Scanning Inactive Computers" -PercentComplete 33
 
     # Inactive Computers
     $ComputersInactiveStatistics = [ordered]@{}
@@ -118,7 +118,7 @@ $GetEndpointStatistics = { Function Get-EndpointStatistics {
         $ComputersInactiveStatistics['Computers ' + $InactiveThresholds[$i] + ' Days Since Password Set:'] = $ThresholdCount
     }
 
-    Write-Progress -Id 2 -ParentId 0 -Activity 'Endpoint Statistics' -Status " --- Scanning Operating Systems" -PercentComplete 66
+    Write-Progress -Id 20 -ParentId 2 -Activity 'Endpoint Statistics' -Status " --- Scanning Operating Systems" -PercentComplete 66
 
     # Operating Systems
     $ComputerOSCount = [ordered]@{
@@ -149,7 +149,7 @@ $GetEndpointStatistics = { Function Get-EndpointStatistics {
         }
     }
 
-    Write-Progress -Id 2 -ParentId 0 -Activity 'Endpoint Statistics' -Status " --- All Computers Scanned" -PercentComplete 100
+    Write-Progress -Id 20 -ParentId 2 -Activity 'Endpoint Statistics' -Status " --- All Computers Scanned" -PercentComplete 100
     
     return ($ComputerStatistics + $ComputersInactiveStatistics + $ComputerOSCount)
 
@@ -180,7 +180,7 @@ $GetOUsWithBlockedInheritanceCount = { Function Get-OUsWithBlockedInheritanceCou
             $BlockedCount++
         }
         $Index++
-        Write-Progress -Id 3 -ParentId 0 -Activity 'Blocked OUs' -Status " --- OUs Scanned: $Index" -PercentComplete (100 * $Index / $Total)
+        Write-Progress -Id 30 -ParentId 3 -Activity 'Blocked OUs' -Status " --- OUs Scanned: $Index" -PercentComplete (100 * $Index / $Total)
     }
   
     return [ordered]@{ 'OUs with Blocked Inheritance:' = $BlockedCount }
@@ -212,7 +212,7 @@ $GetEmptyOUsCount = { Function Get-EmptyOUsCount {
             $EmptyCount++
         } 
         $Index++
-        Write-Progress -Id 4 -ParentId 0 -Activity 'Empty OUs' -Status " --- OUs Scanned: $Index" -PercentComplete (100 * $Index / $Total)
+        Write-Progress -Id 40 -ParentId 4 -Activity 'Empty OUs' -Status " --- OUs Scanned: $Index" -PercentComplete (100 * $Index / $Total)
     }
     
     return [ordered]@{ 'Empty OUs:' = $EmptyCount }
@@ -240,7 +240,7 @@ $GetUnlinkedGPOsCount = { Function Get-UnlinkedGPOsCount {
             # Write-Host $_.DisplayName
             $UnlinkedCount++
         }
-        Write-Progress -Id 5 -ParentId 0 -Activity 'Unlinked GPOs' -Status " --- GPOs Scanned: $Index" -PercentComplete (100 * $Index / $Total)
+        Write-Progress -Id 50 -ParentId 5 -Activity 'Unlinked GPOs' -Status " --- GPOs Scanned: $Index" -PercentComplete (100 * $Index / $Total)
     }
     
     return [ordered]@{
@@ -287,7 +287,7 @@ $GetDuplicateSPNsCount = { Function Get-DuplicateSPNsCount {
             }
         }
         $Index++
-        Write-Progress -Id 6 -ParentId 0 -Activity 'SPN Duplicates' -Status " --- SPNs Scanned: $Index" -PercentComplete (100 * $Index / $Total)
+        Write-Progress -Id 60 -ParentId 6 -Activity 'SPN Duplicates' -Status " --- SPNs Scanned: $Index" -PercentComplete (100 * $Index / $Total)
     }
 
     return [ordered]@{
