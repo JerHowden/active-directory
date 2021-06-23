@@ -71,11 +71,11 @@ $ExportScopedUsersAndGroups = { Function Export-ScopedUsersAndGroups {
 
     # Categorizing Groups by Type
     For($i = 0; $i -lt $GroupsWithGreen.count; $i++) {
-        $yellowIndex
+        $yellowIndex = $null
         For($j = 0; $j -lt $GroupsWithYellow.count; $j++) {
             If($GroupsWithGreen[$i].DistinguishedName -match $GroupsWithYellow[$j].DistinguishedName) {
-                $GroupsWithGreen[$i].CustomGroupType = 4
-                $GroupsWithYellow[$j].CustomGroupType = 4
+                $GroupsWithGreen[$i] | Add-Member -Force -NotePropertyName CustomGroupType -NotePropertyValue 4
+                $GroupsWithYellow[$j] | Add-Member -Force -NotePropertyName CustomGroupType -NotePropertyValue 4
                 $yellowIndex = $j
                 Break
             }
@@ -84,17 +84,17 @@ $ExportScopedUsersAndGroups = { Function Export-ScopedUsersAndGroups {
             If($GroupsWithGreen[$i].DistinguishedName -match $GroupsWithRed[$j].DistinguishedName) {
                 If($GroupsWithGreen[$i].CustomGroupType -eq 4) {
                     $GroupsWithGreen[$i].CustomGroupType = 7
-                    $GroupsWithRed[$j].CustomGroupType = 7
                     $GroupsWithYellow[$yellowIndex].CustomGroupType = 7
+                    $GroupsWithRed[$j] | Add-Member -Force -NotePropertyName CustomGroupType -NotePropertyValue 7
                 } Else {
-                    $GroupsWithGreen[$i].CustomGroupType = 6
-                    $GroupsWithRed[$j].CustomGroupType = 6
+                    $GroupsWithGreen[$i] | Add-Member -Force -NotePropertyName CustomGroupType -NotePropertyValue 6
+                    $GroupsWithRed[$j] | Add-Member -Force -NotePropertyName CustomGroupType -NotePropertyValue 6
                 }
                 Break
             }
         }
         If(!$GroupsWithGreen[$i].CustomGroupType) {
-            $GroupsWithGreen[$i].CustomGroupType = 1
+            $GroupsWithGreen[$i] | Add-Member -Force -NotePropertyName CustomGroupType -NotePropertyValue 1
         }
         Write-Progress -Id 10 -ParentId 1 -Activity '(8/10) Green User-Group Scoping' -Status " --- Added User-Group Type $($GroupsWithGreen[$i].CustomGroupType)" -PercentComplete (100 * $i / $GroupsWithGreen.count)
     }
@@ -103,24 +103,31 @@ $ExportScopedUsersAndGroups = { Function Export-ScopedUsersAndGroups {
         For($j = 0; $j -lt $GroupsWithRed.count; $j++) {
             If($GroupsWithYellow[$i].DistinguishedName -match $GroupsWithRed[$j].DistinguishedName) {
                 If($GroupsWithYellow[$i].CustomGroupType -ne 7) {
-                    $GroupsWithYellow[$i].CustomGroupType = 5
-                    $GroupsWithRed[$j].CustomGroupType = 5
+                    $GroupsWithYellow[$i] | Add-Member -Force -NotePropertyName CustomGroupType -NotePropertyValue 5
+                    $GroupsWithRed[$j] | Add-Member -Force -NotePropertyName CustomGroupType -NotePropertyValue 5
                 }
                 Break
             }
         }
         If(!$GroupsWithYellow[$i].CustomGroupType) {
-            $GroupsWithYellow[$i].CustomGroupType = 2
+            $GroupsWithYellow[$i] | Add-Member -Force -NotePropertyName CustomGroupType -NotePropertyValue 2
         }
         Write-Progress -Id 10 -ParentId 1 -Activity '(9/10) Yellow User-Group Scoping' -Status " --- Added User-Group Type $($GroupsWithYellow[$i].CustomGroupType)" -PercentComplete (100 * $i / $GroupsWithYellow.count)
     }
 
     For($i = 0; $i -lt $GroupsWithRed.count; $i++) {
         If(!$GroupsWithRed[$i].CustomGroupType) {
-            $GroupsWithRed[$i].CustomGroupType = 3
+            $GroupsWithRed[$i] | Add-Member -Force -NotePropertyName CustomGroupType -NotePropertyValue 3
         }
         Write-Progress -Id 10 -ParentId 1 -Activity '(10/10) Red User-Group Scoping' -Status " --- Added User-Group Type $($GroupsWithRed[$i].CustomGroupType)" -PercentComplete (100 * $i / $GroupsWithRed.count)
     }
+
+    # Write-Host Green Group -ForegroundColor Green
+    # Format-Table -InputObject $GroupsWithGreen
+    # Write-Host Yellow Group -ForegroundColor Yellow
+    # Format-Table -InputObject $GroupsWithYellow
+    # Write-Host Red Group -ForegroundColor Red
+    # Format-Table -InputObject $GroupsWithRed
 
     # Export
     New-Item -Path "$($Directory)" -Name "ScopeReport $($Date.ToString('yyyy-MM-dd HH-mm-ss'))" -ItemType "directory"
