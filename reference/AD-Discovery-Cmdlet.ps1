@@ -33,12 +33,13 @@ $GetUsersStatistics = { Function Get-UsersStatistics {
     $Users = Get-ADUser -Filter * -Properties name,lastlogondate,enabled,admincount -Server $Server
     $EnabledUsers = $Users | Where-Object {$_.enabled}
     $AdminUsers = $Users | Where-Object {$_.admincount -eq 1}
+    $Groups = Get-ADGroup -Filter * -Server $Server
     $TotalStatistics = [ordered]@{
         'Total User Objects:' = ($Users).count
         'Enabled User Objects:' = ($EnabledUsers).count
         'Admin User Objects:' = ($AdminUsers).count
-        'Total Groups:' = (Get-ADGroup -Filter * -Server $Server).count
-        'Empty Groups:' = (Get-ADGroup -Filter * -Server $Server -Properties Members | Where-Object {-not $_.members}).count
+        'Total Groups:' = ($Groups).count
+        'Empty Groups:' = ($Groups | Where-Object {-not $_.members}).count
     }
 
     Write-Progress -Id 10 -ParentId 1 -Activity 'User Statistics' -Status " --- Scanning Inactive Users" -PercentComplete 50
