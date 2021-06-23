@@ -19,54 +19,57 @@ $ExportScopedUsersAndGroups = { Function Export-ScopedUsersAndGroups {
         [Parameter(
             HelpMessage='Cutoff in days for inactive users. (90), (180), (360)')]
         [ValidateScript({ ($_.count -gt 0) -and ($_.count -le 12) })]
-        [int[]]$InactiveThreshold,
+        [int]$InactiveThreshold,
+
+        [Parameter(Mandatory,
+            HelpMessage='Folder to send the export files to.')]
+        [string]$Directory
     )
 
     $Date = [DateTime]::ParseExact($DateString, 'yyyy-MM-dd HH:mm:ss', $null)
     If(!$InactiveThreshold) { $InactiveThreshold = (Get-ADDefaultDomainPasswordPolicy).MaxPasswordAge.Days }
 
-    Write-Progress -Id 10 -ParentId 1 -Activity 'User/Group Scoping' -Status " --- Initializating User/Group Scoping" -PercentComplete 1
+    Write-Progress -Id 10 -ParentId 1 -Activity '(1/10) User Scoping' -Status " --- Initializating User Scoping" -PercentComplete 0
+
 
     # Users
     $Users = Get-ADUser -Filter * -Properties name,distinguishedname,lastlogondate,enabled,admincount -Server $Server
     $InactiveUserDate = $Date.AddDays(-1 * $InactiveThreshold)
 
-    Write-Progress -Id 10 -ParentId 1 -Activity 'User/Group Scoping' -Status " --- Scoping User Objects" -PercentComplete 25
-    $GreenUsers = $Users | Where-Object {$_.enabled -and $_.lastlogondate -le $InactiveUserDate}
-    $YellowUsers = $Users | Where-Object {$_.enabled -and $_.lastlogondate -gt $InactiveUserDate -and $_.lastlogondate -le ($Date.AddDays(-365))}
-    $RedUsers = $Users | Where-Object {!$_.enabled -or $_.lastlogondate -gt ($Date.AddDays(-365))}
+    Write-Progress -Id 10 -ParentId 1 -Activity '(2/10) User Scoping' -Status " --- Scoping User Objects" -PercentComplete 40
+    $GreenUsers = $Users | Where-Object {$_.enabled -and $_.lastlogondate -and $_.lastlogondate -gt $InactiveUserDate}
+    $YellowUsers = $Users | Where-Object {$_.enabled -and $_.lastlogondate -and $_.lastlogondate -le $InactiveUserDate -and $_.lastlogondate -gt ($Date.AddDays(-365))}
+    $RedUsers = $Users | Where-Object {(!$_.enabled) -or (!$_.lastlogondate) -or ($_.enabled -and $_.lastlogondate -le ($Date.AddDays(-365)))}
 
-    Write-Progress -Id 10 -ParentId 1 -Activity 'User/Group Scoping' -Status " --- Scoped User Objects!" -PercentComplete 50
-    $SetsTotal = ($GreenUsers.count + $YellowUsers.count + $RedUsers.count)
-    If($SetsTotal -lt $Users.count) {
-        Write-Host " --- ERROR: Scoped user sets not including all users."
-        Return
-    } ElseIf ($SetsTotal -gt $Users.count) {
-        Write-Host " --- ERROR: Scoped user sets double counting certain users."
-        Return
-    }
+    Write-Progress -Id 10 -ParentId 1 -Activity '(3/10) User Scoping' -Status " --- Scoped User Objects!" -PercentComplete 100
 
     Write-Host "In-Scope Users" -ForegroundColor DarkGreen
-    $GreenUsers | Format-Table -AutoSize
+    $GreenUsers | Select-Object -Property name,enabled,lastlogondate | Format-Table -AutoSize
     Write-Host "Questionable Users" -ForegroundColor Yellow
-    $YellowUsers | Format-Table -AutoSize
+    $YellowUsers | Select-Object -Property name,enabled,lastlogondate | Format-Table -AutoSize
     Write-Host "Out-of-Scope Users" -ForegroundColor Red
-    $RedUsers | Format-Table -AutoSize
+    $RedUsers | Select-Object -Property name,enabled,lastlogondate | Format-Table -AutoSize
 
-    Write-Progress -Id 10 -ParentId 1 -Activity 'User/Group Scoping' -Status " --- " -PercentComplete 50
 
-    #Groups
+    # Groups
+    Write-Progress -Id 10 -ParentId 1 -Activity '(4/10) User-Group Scoping' -Status " --- Getting Groups with Green Users" -PercentComplete 0
     $GroupsWithGreen = $GreenUsers | ForEach-Object {
         Get-WinADGroupMemberOf $_.DistinguishedName
     } | Select -ExpandProperty Name -Unique | % { Get-ADGroup $_ }
+    Write-Progress -Id 10 -ParentId 1 -Activity '(5/10) User-Group Scoping' -Status " --- Getting Groups with Yellow Users" -PercentComplete 33
     $GroupsWithYellow = $YellowUsers | ForEach-Object {
         Get-WinADGroupMemberOf $_.DistinguishedName
     } | Select -ExpandProperty Name -Unique | % { Get-ADGroup $_ }
+    Write-Progress -Id 10 -ParentId 1 -Activity '(6/10) User-Group Scoping' -Status " --- Getting Groups with Red Users" -PercentComplete 67
     $GroupsWithRed = $RedUsers | ForEach-Object {
         Get-WinADGroupMemberOf $_.DistinguishedName
     } | Select -ExpandProperty Name -Unique | % { Get-ADGroup $_ }
+    Write-Progress -Id 10 -ParentId 1 -Activity '(7/10) User-Group Scoping' -Status " --- All Groups Received" -PercentComplete 100
 
-    # Categorizing by Type
+    $GroupsCount = $GroupsWithGreen.count + $GroupsWithYellow.count + $GroupsWithRed.count #(includes duplicates)
+    Write-Host "$($GroupsCount) Groups, $($GroupsWithGreen.count) Green Groups, $($GroupsWithYellow.count) Yellow Groups, $($GroupsWithRed.count) Red Groups"
+
+    # Categorizing Groups by Type
     For($i = 0; $i -lt $GroupsWithGreen.count; $i++) {
         $yellowIndex
         For($j = 0; $j -lt $GroupsWithYellow.count; $j++) {
@@ -93,6 +96,7 @@ $ExportScopedUsersAndGroups = { Function Export-ScopedUsersAndGroups {
         If(!$GroupsWithGreen[$i].CustomGroupType) {
             $GroupsWithGreen[$i].CustomGroupType = 1
         }
+        Write-Progress -Id 10 -ParentId 1 -Activity '(8/10) Green User-Group Scoping' -Status " --- Added User-Group Type $($GroupsWithGreen[$i].CustomGroupType)" -PercentComplete (100 * $i / $GroupsWithGreen.count)
     }
 
     For($i = 0; $i -lt $GroupsWithYellow.count; $i++) {
@@ -108,23 +112,47 @@ $ExportScopedUsersAndGroups = { Function Export-ScopedUsersAndGroups {
         If(!$GroupsWithYellow[$i].CustomGroupType) {
             $GroupsWithYellow[$i].CustomGroupType = 2
         }
+        Write-Progress -Id 10 -ParentId 1 -Activity '(9/10) Yellow User-Group Scoping' -Status " --- Added User-Group Type $($GroupsWithYellow[$i].CustomGroupType)" -PercentComplete (100 * $i / $GroupsWithYellow.count)
     }
 
     For($i = 0; $i -lt $GroupsWithRed.count; $i++) {
         If(!$GroupsWithRed[$i].CustomGroupType) {
             $GroupsWithRed[$i].CustomGroupType = 3
         }
+        Write-Progress -Id 10 -ParentId 1 -Activity '(10/10) Red User-Group Scoping' -Status " --- Added User-Group Type $($GroupsWithRed[$i].CustomGroupType)" -PercentComplete (100 * $i / $GroupsWithRed.count)
     }
 
-    $GreenUsers | Export-Csv
-    $YellowUsers | Export-Csv
-    $RedUsers | Export-Csv
-    $GroupsWithGreen | Export-Csv
-    $GroupsWithYellow | Export-Csv
-    $GroupsWithRed | Export-Csv
+    # Export
+    New-Item -Path "$($Directory)" -Name "ScopeReport $($Date.ToString('yyyy-MM-dd HH-mm-ss'))" -ItemType "directory"
+    $GreenUsers | Export-Csv -NoTypeInformation -Path "$($Directory)\ScopeReport $($Date.ToString('yyyy-MM-dd HH-mm-ss'))\GreenUsers.csv"
+    $YellowUsers | Export-Csv -NoTypeInformation -Path "$($Directory)\ScopeReport $($Date.ToString('yyyy-MM-dd HH-mm-ss'))\YellowUsers.csv"
+    $RedUsers | Export-Csv -NoTypeInformation -Path "$($Directory)\ScopeReport $($Date.ToString('yyyy-MM-dd HH-mm-ss'))\RedUsers.csv"
+    $GroupsWithGreen | Export-Csv -NoTypeInformation -Path "$($Directory)\ScopeReport $($Date.ToString('yyyy-MM-dd HH-mm-ss'))\GroupsWithGreen.csv"
+    $GroupsWithYellow | Export-Csv -NoTypeInformation -Path "$($Directory)\ScopeReport $($Date.ToString('yyyy-MM-dd HH-mm-ss'))\GroupsWithYellow.csv"
+    $GroupsWithRed | Export-Csv -NoTypeInformation -Path "$($Directory)\ScopeReport $($Date.ToString('yyyy-MM-dd HH-mm-ss'))\GroupsWithRed.csv"
 
 } }
 
+
+#Accepts a Job as a parameter and writes the latest progress of it
+function WriteJobProgress {
+
+    param($Job, $Id)
+ 
+    #Make sure the first child job exists
+    if($Job.ChildJobs[0].Progress -ne $null)
+    {
+        #Extracts the latest progress of the job and writes the progress
+        $jobProgressHistory = $Job.ChildJobs[0].Progress;
+        $latestProgress = $jobProgressHistory[$jobProgressHistory.Count - 1];
+        $latestPercentComplete = $latestProgress | Select -expand PercentComplete;
+        $latestActivity = $latestProgress | Select -expand Activity;
+        $latestStatus = $latestProgress | Select -expand StatusDescription;
+    
+        #When adding multiple progress bars, a unique ID must be provided. Here I am providing the JobID as this
+        Write-Progress -Id $Id -ParentId 0 -Activity $latestActivity -Status $latestStatus -PercentComplete $latestPercentComplete;
+    }
+}
 
 
 <#
@@ -169,9 +197,9 @@ Function Invoke-ADScopeReport {
         # Start Discovery Jobs
         Write-Progress -Id 0 -Activity 'Scope Report' -Status "Initiating Jobs:" -PercentComplete 0
         $UserScopingJob = Start-Job -InitializationScript $ExportScopedUsersAndGroups -ScriptBlock {
-            param($Server, $Date)
-            Get-UsersStatistics -Server $Server -DateString ($Date).ToString('yyyy-MM-dd HH:mm:ss') -InactiveThreshold 90
-        } -ArgumentList $Server,$Date
+            param($Server, $Date, $Directory)
+            Export-ScopedUsersAndGroups -Server $Server -DateString ($Date).ToString('yyyy-MM-dd HH:mm:ss') -InactiveThreshold 90 -Directory $Directory
+        } -ArgumentList $Server,$Date,$PSScriptRoot
 
         $Jobs = Get-Job | ? { $_.state -eq 'Running' }
         $TotalJobs = $Jobs.Count
@@ -194,3 +222,9 @@ Function Invoke-ADScopeReport {
 
     End {}
 }
+
+# Test
+Invoke-ADScopeReport -Domain 'prod.ncidemo.com' -DomainController 'DC01'
+
+# Prod
+# Invoke-ADScopeReport -Domain '' -DomainController ''
