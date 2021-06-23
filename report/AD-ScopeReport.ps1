@@ -71,10 +71,25 @@ Function Export-ScopedUsersAndGroups {
         Write-Host "$($RedUsers.count) Red Users" -ForegroundColor Red
     $RedUsers | Out-File -FilePath "$($Directory)\ScopeReport $($Date.ToString('yyyy-MM-dd HH-mm-ss'))\RedUsers.txt"
         Write-Progress -Id 10 -ParentId 0 -Activity '(7/11) Red User-Group Scoping' -Status " --- Getting Groups with Red Users" -PercentComplete 90
-    $GroupsWithRed = foreach($RUser in $RedUsers) {
-        Get-WinADGroupMemberOf $RUser | Select -ExpandProperty DistinguishedName
+    # $GroupsWithRed = foreach($RUser in $RedUsers) {
+    #     Get-WinADGroupMemberOf $RUser | Select -ExpandProperty DistinguishedName
+    # }
+    $GroupsWithRed = @()
+    for($i = 0; $i -lt $RedUsers.count; $i++) {
+        $TempGroups = Get-WinADGroupMemberOf $RedUsers[$i] | Select -ExpandProperty DistinguishedName
+        $pattern = "^({0})$" -f ($GroupsWithRed -join '|')
+        foreach($DN in $TempGroups) {
+            if($DN -notmatch $pattern) {
+                $GroupsWithRed += $DN
+            }
+        }
+        [system.gc]::Collect()
+        If($i % 50 -eq 0) {
+            Write-Host $GroupsWithRed
+            Write-Host ""
+        }
     }
-    $GroupsWithRed = $GroupsWithRed | Sort -Unique
+    # $GroupsWithRed = $GroupsWithRed | Sort -Unique
         Write-Host "$($GroupsWithRed.count) Red Groups" -ForegroundColor Red
     $RedUsers | Out-Null
     [system.gc]::Collect()
