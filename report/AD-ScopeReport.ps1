@@ -43,6 +43,7 @@ Function Export-ScopedUsersAndGroups {
         Write-Host "$($GreenUsers.count) Green Users" -ForegroundColor Green
         $GreenUsers | Out-File -FilePath "$($Directory)\ScopeReport $($Date.ToString('yyyy-MM-dd HH-mm-ss'))\GreenUsers.txt"
         
+        $StartTimeGreen = $(Get-Date)
         $GroupsWithGreen = @()
         for($i = 0; $i -lt $GreenUsers.count; $i++) {
             $TempGroups = Get-WinADGroupMemberOf $GreenUsers[$i] | Select -ExpandProperty DistinguishedName
@@ -52,11 +53,14 @@ Function Export-ScopedUsersAndGroups {
                     $GroupsWithGreen += $DN
                 }
             }
-            Write-Progress -Id 10 -ParentId 1 -Activity '(2/8) Green User-Group Scoping' -Status " --- Getting Groups with Green Users" -PercentComplete (100 * $i / $GreenUsers.count)
+            $CurrentTime = $(Get-Date)
+            $TotalSeconds = ($CurrentTime - $StartTimeGreen).TotalSeconds
+            Write-Progress -Id 10 -ParentId 1 -Activity 'Green User-Group Scoping' -Status " --- Getting Groups with Green Users" -PercentComplete (100 * $i / $GreenUsers.count) -SecondsRemaining ((($TotalSeconds) * ($GreenUsers.count/($i + 1))) - $TotalSeconds)
             [system.gc]::Collect()
         }
 
-        Write-Host "$($GroupsWithGreen.count) Green Groups" -ForegroundColor Green
+        $EndTimeGreen = $(Get-Date)
+        Write-Host "$($GroupsWithGreen.count) Green Groups, $(($EndTimeGreen - $StartTimeGreen).Minutes) Minutes Elapsed" -ForegroundColor Green
         $GreenUsers | Out-Null
         [system.gc]::Collect()
 
@@ -66,6 +70,7 @@ Function Export-ScopedUsersAndGroups {
         Write-Host "$($YellowUsers.count) Yellow Users" -ForegroundColor Yellow
         $YellowUsers | Out-File -FilePath "$($Directory)\ScopeReport $($Date.ToString('yyyy-MM-dd HH-mm-ss'))\YellowUsers.txt"
 
+        $StartTimeYellow = $(Get-Date)
         $GroupsWithYellow = @()
         for($i = 0; $i -lt $YellowUsers.count; $i++) {
             $TempGroups = Get-WinADGroupMemberOf $YellowUsers[$i] | Select -ExpandProperty DistinguishedName
@@ -75,11 +80,14 @@ Function Export-ScopedUsersAndGroups {
                     $GroupsWithYellow += $DN
                 }
             }
-            Write-Progress -Id 10 -ParentId 1 -Activity '(3/8) Yellow User-Group Scoping' -Status " --- Getting Groups with Yellow Users" -PercentComplete (100 * $i / $YellowUsers.count)
+            $CurrentTime = $(Get-Date)
+            $TotalSeconds = ($CurrentTime - $StartTimeYellow).TotalSeconds
+            Write-Progress -Id 10 -ParentId 1 -Activity 'Yellow User-Group Scoping' -Status " --- Getting Groups with Yellow Users" -PercentComplete (100 * $i / $YellowUsers.count) -SecondsRemaining ((($TotalSeconds) * ($YellowUsers.count/($i + 1))) - $TotalSeconds)
             [system.gc]::Collect()
         }
         
-        Write-Host "$($GroupsWithYellow.count) Yellow Groups" -ForegroundColor Yellow
+        $EndTimeYellow = $(Get-Date)
+        Write-Host "$($GroupsWithYellow.count) Yellow Groups, $(($EndTimeYellow - $StartTimeYellow).Minutes) Minutes Elapsed" -ForegroundColor Yellow
         $YellowUsers | Out-Null
         [system.gc]::Collect()
 
@@ -89,6 +97,7 @@ Function Export-ScopedUsersAndGroups {
         Write-Host "$($RedUsers.count) Red Users" -ForegroundColor Red
         $RedUsers | Out-File -FilePath "$($Directory)\ScopeReport $($Date.ToString('yyyy-MM-dd HH-mm-ss'))\RedUsers.txt"
 
+        $StartTimeRed = $(Get-Date)
         $GroupsWithRed = @()
         for($i = 0; $i -lt $RedUsers.count; $i++) {
             $TempGroups = Get-WinADGroupMemberOf $RedUsers[$i] | Select -ExpandProperty DistinguishedName
@@ -98,11 +107,14 @@ Function Export-ScopedUsersAndGroups {
                     $GroupsWithRed += $DN
                 }
             }
-            Write-Progress -Id 10 -ParentId 1 -Activity '(4/8) Red User-Group Scoping' -Status " --- Getting Groups with Red Users" -PercentComplete (100 * $i / $RedUsers.count)
+            $CurrentTime = $(Get-Date)
+            $TotalSeconds = ($CurrentTime - $StartTimeRed).TotalSeconds
+            Write-Progress -Id 10 -ParentId 1 -Activity 'Red User-Group Scoping' -Status " --- Getting Groups with Red Users" -PercentComplete (100 * $i / $RedUsers.count) -SecondsRemaining ((($TotalSeconds) * ($RedUsers.count/($i + 1))) - $TotalSeconds)
             [system.gc]::Collect()
         }
 
-        Write-Host "$($GroupsWithRed.count) Red Groups" -ForegroundColor Red
+        $EndTimeRed = $(Get-Date)
+        Write-Host "$($GroupsWithRed.count) Red Groups, $(($EndTimeRed - $StartTimeRed).Minutes) Minutes Elapsed" -ForegroundColor Red
         $RedUsers | Out-Null
         [system.gc]::Collect()
 
