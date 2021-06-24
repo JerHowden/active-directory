@@ -33,7 +33,7 @@ Function Export-ScopedUsersAndGroups {
     New-Item -Path "$($Directory)" -Name "ScopeReport $($Date.ToString('yyyy-MM-dd HH-mm-ss'))" -ItemType "directory"
 
     # Users
-        $Users = Get-ADUser -Filter * -Properties distinguishedname,lastlogondate,enabled,admincount -Server $Server
+        $Users = Get-ADUser -Filter {cn -notlike '*@*'} -Properties distinguishedname,lastlogondate,enabled,admincount -Server $Server
         Write-Host "$($Users.count) Users" -ForegroundColor Cyan
         $InactiveUserDate = $Date.AddDays(-1 * $InactiveThreshold)
 
@@ -44,13 +44,13 @@ Function Export-ScopedUsersAndGroups {
         $GreenUsers | Out-File -FilePath "$($Directory)\ScopeReport $($Date.ToString('yyyy-MM-dd HH-mm-ss'))\GreenUsers.txt"
         
         $StartTimeGreen = $(Get-Date)
-        $GroupsWithGreen = @()
+        $GroupsWithGreen = [System.Collections.ArrayList]::new()
         for($i = 0; $i -lt $GreenUsers.count; $i++) {
             $TempGroups = Get-WinADGroupMemberOf $GreenUsers[$i] | Select -ExpandProperty DistinguishedName
             $pattern = "^({0})$" -f ($GroupsWithGreen -join '|')
             foreach($DN in $TempGroups) {
                 if($DN -notmatch $pattern) {
-                    $GroupsWithGreen += $DN
+                    $GroupsWithGreen.Add($DN)
                 }
             }
             $CurrentTime = $(Get-Date)
@@ -61,7 +61,7 @@ Function Export-ScopedUsersAndGroups {
 
         $EndTimeGreen = $(Get-Date)
         Write-Host "$($GroupsWithGreen.count) Green Groups, $(($EndTimeGreen - $StartTimeGreen).Minutes) Minutes Elapsed" -ForegroundColor Green
-        $GreenUsers | Out-Null
+        $null = $GreenUsers
         [system.gc]::Collect()
 
     # Yellow Users and Groups
@@ -71,13 +71,13 @@ Function Export-ScopedUsersAndGroups {
         $YellowUsers | Out-File -FilePath "$($Directory)\ScopeReport $($Date.ToString('yyyy-MM-dd HH-mm-ss'))\YellowUsers.txt"
 
         $StartTimeYellow = $(Get-Date)
-        $GroupsWithYellow = @()
+        $GroupsWithYellow = [System.Collections.ArrayList]::new()
         for($i = 0; $i -lt $YellowUsers.count; $i++) {
             $TempGroups = Get-WinADGroupMemberOf $YellowUsers[$i] | Select -ExpandProperty DistinguishedName
             $pattern = "^({0})$" -f ($GroupsWithYellow -join '|')
             foreach($DN in $TempGroups) {
                 if($DN -notmatch $pattern) {
-                    $GroupsWithYellow += $DN
+                    $GroupsWithYellow.Add($DN)
                 }
             }
             $CurrentTime = $(Get-Date)
@@ -88,7 +88,7 @@ Function Export-ScopedUsersAndGroups {
         
         $EndTimeYellow = $(Get-Date)
         Write-Host "$($GroupsWithYellow.count) Yellow Groups, $(($EndTimeYellow - $StartTimeYellow).Minutes) Minutes Elapsed" -ForegroundColor Yellow
-        $YellowUsers | Out-Null
+        $null = $YellowUsers
         [system.gc]::Collect()
 
     # Red Users and Groups
@@ -98,13 +98,13 @@ Function Export-ScopedUsersAndGroups {
         $RedUsers | Out-File -FilePath "$($Directory)\ScopeReport $($Date.ToString('yyyy-MM-dd HH-mm-ss'))\RedUsers.txt"
 
         $StartTimeRed = $(Get-Date)
-        $GroupsWithRed = @()
+        $GroupsWithRed = [System.Collections.ArrayList]::new()
         for($i = 0; $i -lt $RedUsers.count; $i++) {
             $TempGroups = Get-WinADGroupMemberOf $RedUsers[$i] | Select -ExpandProperty DistinguishedName
             $pattern = "^({0})$" -f ($GroupsWithRed -join '|')
             foreach($DN in $TempGroups) {
                 if($DN -notmatch $pattern) {
-                    $GroupsWithRed += $DN
+                    $GroupsWithRed.Add($DN)
                 }
             }
             $CurrentTime = $(Get-Date)
@@ -115,7 +115,7 @@ Function Export-ScopedUsersAndGroups {
 
         $EndTimeRed = $(Get-Date)
         Write-Host "$($GroupsWithRed.count) Red Groups, $(($EndTimeRed - $StartTimeRed).Minutes) Minutes Elapsed" -ForegroundColor Red
-        $RedUsers | Out-Null
+        $null = $RedUsers
         [system.gc]::Collect()
 
     # Finish User Scoping
@@ -165,9 +165,9 @@ Function Export-ScopedUsersAndGroups {
             }
         }
         $GroupsWithGreenObjects | Export-Csv -NoTypeInformation -Path "$($Directory)\ScopeReport $($Date.ToString('yyyy-MM-dd HH-mm-ss'))\GroupsWithGreen.csv"
-        $GroupsWithGreen | Out-Null
-        $GroupsWithGreenTypes | Out-Null
-        $GroupsWithGreenObjects | Out-Null
+        $null = $GroupsWithGreen
+        $null = $GroupsWithGreenTypes
+        $null = $GroupsWithGreenObjects
         [system.gc]::Collect()
 
         # Yellow Groups
@@ -194,9 +194,9 @@ Function Export-ScopedUsersAndGroups {
             }
         }
         $GroupsWithYellowObjects | Export-Csv -NoTypeInformation -Path "$($Directory)\ScopeReport $($Date.ToString('yyyy-MM-dd HH-mm-ss'))\GroupsWithYellow.csv"
-        $GroupsWithYellow | Out-Null
-        $GroupsWithYellowTypes | Out-Null
-        $GroupsWithYellowObjects | Out-Null
+        $null = $GroupsWithYellow
+        $null = $GroupsWithYellowTypes
+        $null = $GroupsWithYellowObjects
         [system.gc]::Collect()
 
         #Red Groups
@@ -214,13 +214,17 @@ Function Export-ScopedUsersAndGroups {
             }
         }
         $GroupsWithRedObjects | Export-Csv -NoTypeInformation -Path "$($Directory)\ScopeReport $($Date.ToString('yyyy-MM-dd HH-mm-ss'))\GroupsWithRed.csv"
-        $GroupsWithRed | Out-Null
-        $GroupsWithRedTypes | Out-Null
-        $GroupsWithRedObjects | Out-Null
+        $null = $GroupsWithRed
+        $null = $GroupsWithRedTypes
+        $null = $GroupsWithRedObjects
         [system.gc]::Collect()
 
         Write-Progress -Id 1 -Activity 'Scope Report Complete' -PercentComplete 100
         Start-Sleep -Seconds 10
+
+}
+
+Function Export-TypedGroups {
 
 }
 
