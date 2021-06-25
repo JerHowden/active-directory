@@ -66,7 +66,7 @@ Function Export-ScopedUsersAndNestedGroups {
         $IGreenGroups = [System.Collections.ArrayList]::new()
         for($i = 0; $i -lt $Groups.count; $i++) {
             try {
-                $GroupUsers = Get-ADGroupMember -Identity $Groups[$i] | Where-Object {$_.objectclass -eq "user"}
+                $GroupUsers = Get-ADGroupMember -Identity $Groups[$i] | Where-Object {$_.objectclass -eq "user"} | Select -ExpandProperty distinguishedname
             } catch {
                 $ManualCheckGreenGroups.Add($Groups[$i])
             }
@@ -80,7 +80,8 @@ Function Export-ScopedUsersAndNestedGroups {
             if($FoundGreenUser) {
                 $IGreenGroups.Add($Groups[$i])
             }
-            Write-Progress -Id 10 -ParentId 1 -Activity 'Immediate Groups' -Status " --- Scoped $($IGreenGroups.count) Immediate Green Groups" -PercentComplete (100 * $i / $Groups.count)
+            $TotalSeconds = ($(Get-Date) - $StartTimeGreen).TotalSeconds
+            Write-Progress -Id 10 -ParentId 1 -Activity 'Immediate Groups' -Status " --- Scoped $($IGreenGroups.count) Immediate Green Groups" -PercentComplete (100 * $i / $Groups.count) -SecondsRemaining (($TotalSeconds * ($Groups.count/($i+1))) - $TotalSeconds)
         }
 
         $EndTimeGreen = $(Get-Date)
@@ -122,7 +123,8 @@ Function Export-ScopedUsersAndNestedGroups {
                     $NewGreenGroups.Add($ParentGroups[$i])
                     $NewParentGroups.Remove($ParentGroups[$i])
                 }
-                Write-Progress -Id 10 -ParentId 1 -Activity 'Green Groups' -Status " --- Scoped $($NewGreenGroups.count) Green Groups" -PercentComplete (100 * $i / $ParentGroups.count)
+                $TotalSeconds = ($(Get-Date) - $StartTimeGreen).TotalSeconds
+                Write-Progress -Id 10 -ParentId 1 -Activity 'Green Groups' -Status " --- Scoped $($NewGreenGroups.count) Green Groups" -PercentComplete (100 * $i / $ParentGroups.count) -SecondsRemaining (($TotalSeconds * ($ParentGroups.count/($i+1))) - $TotalSeconds)
             }
             if($ParentGroups.count -eq $NewParentGroups.count) {
                 Write-Host "Found $($MasterGreenGroups.count) Green Groups" -ForegroundColor Green
@@ -165,7 +167,7 @@ Function Export-ScopedUsersAndNestedGroups {
         $IYellowGroups = [System.Collections.ArrayList]::new()
         for($i = 0; $i -lt $Groups.count; $i++) {
             try {
-                $GroupUsers = Get-ADGroupMember -Identity $Groups[$i] | Where-Object {$_.objectclass -eq "user"}
+                $GroupUsers = Get-ADGroupMember -Identity $Groups[$i] | Where-Object {$_.objectclass -eq "user"} | Select -ExpandProperty distinguishedname
             } catch {
                 $ManualCheckYellowGroups.Add($Groups[$i])
             }
@@ -179,7 +181,8 @@ Function Export-ScopedUsersAndNestedGroups {
             if($FoundYellowUser) {
                 $IYellowGroups.Add($Groups[$i])
             }
-            Write-Progress -Id 10 -ParentId 1 -Activity 'Immediate Groups' -Status " --- Scoped $($IYellowGroups.count) Immediate Yellow Groups" -PercentComplete (100 * $i / $Groups.count)
+            $TotalSeconds = ($(Get-Date) - $StartTimeYellow).TotalSeconds
+            Write-Progress -Id 10 -ParentId 1 -Activity 'Immediate Groups' -Status " --- Scoped $($IYellowGroups.count) Immediate Yellow Groups" -PercentComplete (100 * $i / $Groups.count) -SecondsRemaining (($TotalSeconds * ($Groups.count/($i+1))) - $TotalSeconds)
         }
 
         $EndTimeYellow = $(Get-Date)
@@ -220,7 +223,8 @@ Function Export-ScopedUsersAndNestedGroups {
                     $NewYellowGroups.Add($ParentGroups[$i])
                     $NewParentGroups.Remove($ParentGroups[$i])
                 }
-                Write-Progress -Id 10 -ParentId 1 -Activity 'Yellow Groups' -Status " --- Scoped $($NewYellowGroups.count) Yellow Groups" -PercentComplete (100 * $i / $ParentGroups.count)
+                $TotalSeconds = ($(Get-Date) - $StartTimeYellow).TotalSeconds
+                Write-Progress -Id 10 -ParentId 1 -Activity 'Yellow Groups' -Status " --- Scoped $($NewYellowGroups.count) Yellow Groups" -PercentComplete (100 * $i / $ParentGroups.count) -SecondsRemaining (($TotalSeconds * ($ParentGroups.count/($i+1))) - $TotalSeconds)
             }
             if($ParentGroups.count -eq $NewParentGroups.count) {
                 Write-Host "Found $($MasterYellowGroups.count) Yellow Groups" -ForegroundColor Yellow
@@ -263,7 +267,7 @@ Function Export-ScopedUsersAndNestedGroups {
         $IRedGroups = [System.Collections.ArrayList]::new()
         for($i = 0; $i -lt $Groups.count; $i++) {
             try {
-                $GroupUsers = Get-ADGroupMember -Identity $Groups[$i] | Where-Object {$_.objectclass -eq "user"}
+                $GroupUsers = Get-ADGroupMember -Identity $Groups[$i] | Where-Object {$_.objectclass -eq "user"}  | Select -ExpandProperty distinguishedname
             } catch {
                 $ManualCheckRedGroups.Add($Groups[$i])
             }
@@ -277,7 +281,8 @@ Function Export-ScopedUsersAndNestedGroups {
             if($FoundRedUser) {
                 $IRedGroups.Add($Groups[$i])
             }
-            Write-Progress -Id 10 -ParentId 1 -Activity 'Immediate Groups' -Status " --- Scoped $($IRedGroups.count) Immediate Red Groups" -PercentComplete (100 * $i / $Groups.count)
+            $TotalSeconds = ($(Get-Date) - $StartTimeRed).TotalSeconds
+            Write-Progress -Id 10 -ParentId 1 -Activity 'Immediate Groups' -Status " --- Scoped $($IRedGroups.count) Immediate Red Groups" -PercentComplete (100 * $i / $Groups.count) -SecondsRemaining (($TotalSeconds * ($Groups.count/($i+1))) - $TotalSeconds)
         }
 
         $EndTimeRed = $(Get-Date)
@@ -318,7 +323,8 @@ Function Export-ScopedUsersAndNestedGroups {
                     $NewRedGroups.Add($ParentGroups[$i])
                     $NewParentGroups.Remove($ParentGroups[$i])
                 }
-                Write-Progress -Id 10 -ParentId 1 -Activity 'Red Groups' -Status " --- Scoped $($NewRedGroups.count) Red Groups" -PercentComplete (100 * $i / $ParentGroups.count)
+                $TotalSeconds = ($(Get-Date) - $StartTimeRed).TotalSeconds
+                Write-Progress -Id 10 -ParentId 1 -Activity 'Red Groups' -Status " --- Scoped $($NewRedGroups.count) Red Groups" -PercentComplete (100 * $i / $ParentGroups.count) -SecondsRemaining (($TotalSeconds * ($ParentGroups.count/($i+1))) - $TotalSeconds)
             }
             if($ParentGroups.count -eq $NewParentGroups.count) {
                 Write-Host "Found $($MasterRedGroups.count) Red Groups" -ForegroundColor Red
