@@ -1,4 +1,4 @@
-Function Export-ScopedUsersandImmediateGroups {
+Function Export-ScopedUsersAndNestedGroups {
 
     [CmdletBinding()]
     Param(
@@ -112,10 +112,10 @@ Function Export-ScopedUsersandImmediateGroups {
                     $NewGreenGroups.Add($ParentGroups[$i])
                     $NewParentGroups.Remove($ParentGroups[$i])
                 }
-                Write-Progress -Id 10 -ParentId 1 -Activity 'Green Groups' -Status " --- Scoped $($GreenGroups.count) Green Groups" -PercentComplete (100 * $i / $ParentGroups.count)
+                Write-Progress -Id 10 -ParentId 1 -Activity 'Green Groups' -Status " --- Scoped $($NewGreenGroups.count) Green Groups" -PercentComplete (100 * $i / $ParentGroups.count)
             }
             if($ParentGroups.count -eq $NewParentGroups.count) {
-                Write-Host "Found $($GreenGroups.count) Green Groups" -ForegroundColor Green
+                Write-Host "Found $($MasterGreenGroups.count) Green Groups" -ForegroundColor Green
                 break
             }
 
@@ -196,10 +196,10 @@ Function Export-ScopedUsersandImmediateGroups {
                     $NewYellowGroups.Add($ParentGroups[$i])
                     $NewParentGroups.Remove($ParentGroups[$i])
                 }
-                Write-Progress -Id 10 -ParentId 1 -Activity 'Yellow Groups' -Status " --- Scoped $($YellowGroups.count) Yellow Groups" -PercentComplete (100 * $i / $ParentGroups.count)
+                Write-Progress -Id 10 -ParentId 1 -Activity 'Yellow Groups' -Status " --- Scoped $($NewYellowGroups.count) Yellow Groups" -PercentComplete (100 * $i / $ParentGroups.count)
             }
             if($ParentGroups.count -eq $NewParentGroups.count) {
-                Write-Host "Found $($YellowGroups.count) Yellow Groups" -ForegroundColor Yellow
+                Write-Host "Found $($MasterYellowGroups.count) Yellow Groups" -ForegroundColor Yellow
                 break
             }
 
@@ -280,10 +280,10 @@ Function Export-ScopedUsersandImmediateGroups {
                     $NewRedGroups.Add($ParentGroups[$i])
                     $NewParentGroups.Remove($ParentGroups[$i])
                 }
-                Write-Progress -Id 10 -ParentId 1 -Activity 'Red Groups' -Status " --- Scoped $($RedGroups.count) Red Groups" -PercentComplete (100 * $i / $ParentGroups.count)
+                Write-Progress -Id 10 -ParentId 1 -Activity 'Red Groups' -Status " --- Scoped $($NewRedGroups.count) Red Groups" -PercentComplete (100 * $i / $ParentGroups.count)
             }
             if($ParentGroups.count -eq $NewParentGroups.count) {
-                Write-Host "Found $($RedGroups.count) Red Groups" -ForegroundColor Red
+                Write-Host "Found $($MasterRedGroups.count) Red Groups" -ForegroundColor Red
                 break
             }
 
@@ -309,135 +309,9 @@ Function Export-ScopedUsersandImmediateGroups {
         $null = $ParentGroups
         [system.gc]::Collect()
 
-}
-
-# Export Scoped Users and Duplicate Scoped Groups
-Function Export-ScopedUsersAndGroups {
-
-    [CmdletBinding()]
-    Param(
-        [Parameter(Mandatory,
-            HelpMessage='Active Directory Server. (DC01.prod.demo.com)')]
-        [string]$Server,
-
-        [Parameter(Mandatory,
-            HelpMessage='Date string in the form of yyyy-MM-dd HH:mm:ss')]
-        [ValidateScript({ 
-            [System.DateTime]$ParsedDate = Get-Date
-            [DateTime]::TryParseExact($_, 'yyyy-MM-dd HH:mm:ss', $null, [System.Globalization.DateTimeStyles]::None, [ref]$ParsedDate)
-            $ParsedDate
-        })]
-        [string]$DateString,
-
-        [Parameter(
-            HelpMessage='Cutoff in days for inactive users. (90), (180), (360)')]
-        [ValidateScript({ ($_.count -gt 0) -and ($_.count -le 12) })]
-        [int]$InactiveThreshold,
-
-        [Parameter(Mandatory,
-            HelpMessage='Folder to send the export files to.')]
-        [string]$RootFolder
-    )
-
-    $Date = [DateTime]::ParseExact($DateString, 'yyyy-MM-dd HH:mm:ss', $null)
-    If(!$InactiveThreshold) { $InactiveThreshold = (Get-ADDefaultDomainPasswordPolicy).MaxPasswordAge.Days }
-
-    Write-Progress -Id 1 -Activity 'User Scoping' -Status " --- Initializating User Scoping" -PercentComplete 0
-    New-Item -Path "$($RootFolder)" -Name "ScopeReport $($Date.ToString('yyyy-MM-dd HH-mm-ss'))" -ItemType "directory"
-    $Directory = "$($RootFolder)\ScopeReport $($Date.ToString('yyyy-MM-dd HH-mm-ss'))"
-
-    # Users
-        $Users = Get-ADUser -Filter {cn -notlike '*@*'} -Properties distinguishedname,lastlogondate,enabled,admincount -Server $Server
-        Write-Host "$($Users.count) Users" -ForegroundColor Cyan
-        $InactiveUserDate = $Date.AddDays(-1 * $InactiveThreshold)
-
-    # Green Users and Groups
-        Write-Progress -Id 1 -Activity 'Green User Scoping' -Status " --- Scoping Green User Objects" -PercentComplete 25
-        $GreenUsers = $Users | Where-Object {$_.enabled -and $_.lastlogondate -and $_.lastlogondate -gt $InactiveUserDate} | Select -ExpandProperty DistinguishedName
-        Write-Host "$($GreenUsers.count) Green Users" -ForegroundColor Green
-        $GreenUsers | Out-File -FilePath "$($Directory)\GreenUsers.txt"
-        
-        # Write to File
-        $StartTimeGreen = $(Get-Date)
-        Out-File -FilePath "$($Directory)\GroupsWithGreen.txt"
-
-        for($i = 0; $i -lt $GreenUsers.count; $i++) {
-            $TempGroups = Get-WinADGroupMemberOf $GreenUsers[$i] | Select -ExpandProperty DistinguishedName
-            try {
-                Add-Content -Path "$($Directory)\GroupsWithGreen.txt" -Value $TempGroups
-            } catch {
-                Write-Host "Error Occurred while appending Green Groups:"
-                Write-Host $_
-            }
-            $CurrentTime = $(Get-Date)
-            $TotalSeconds = ($CurrentTime - $StartTimeGreen).TotalSeconds
-            Write-Progress -Id 10 -ParentId 1 -Activity 'Green User-Group Scoping' -Status " --- Getting Groups with Green Users" -PercentComplete (100 * $i / $GreenUsers.count) -SecondsRemaining ((($TotalSeconds) * ($GreenUsers.count/($i + 1))) - $TotalSeconds)
-            [system.gc]::Collect()
-        }
-
-        $EndTimeGreen = $(Get-Date)
-        Write-Host "Wrote Green Groups to File, $(($EndTimeGreen - $StartTimeGreen).Minutes) Minutes Elapsed" -ForegroundColor Green
-        $null = $GreenUsers
-        [system.gc]::Collect()
-
-    # Yellow Users and Groups
-        Write-Progress -Id 1 -Activity 'Yellow User Scoping' -Status " --- Scoping Yellow User Objects" -PercentComplete 50
-        $YellowUsers = $Users | Where-Object {$_.enabled -and $_.lastlogondate -and $_.lastlogondate -le $InactiveUserDate -and $_.lastlogondate -gt ($Date.AddDays(-365))} | Select -ExpandProperty DistinguishedName
-        Write-Host "$($YellowUsers.count) Yellow Users" -ForegroundColor Yellow
-        $YellowUsers | Out-File -FilePath "$($Directory)\YellowUsers.txt"
-
-        # Write to File
-        $StartTimeYellow = $(Get-Date)
-        Out-File -FilePath "$($Directory)\GroupsWithYellow.txt"
-
-        for($i = 0; $i -lt $YellowUsers.count; $i++) {
-            $TempGroups = Get-WinADGroupMemberOf $YellowUsers[$i] | Select -ExpandProperty DistinguishedName
-            try {
-                Add-Content -Path "$($Directory)\GroupsWithYellow.txt" -Value $TempGroups
-            } catch {
-                Write-Host "Error Occurred while appending Yellow Groups:"
-                Write-Host $_
-            }
-            $CurrentTime = $(Get-Date)
-            $TotalSeconds = ($CurrentTime - $StartTimeYellow).TotalSeconds
-            Write-Progress -Id 10 -ParentId 1 -Activity 'Yellow User-Group Scoping' -Status " --- Getting Groups with Yellow Users" -PercentComplete (100 * $i / $YellowUsers.count) -SecondsRemaining ((($TotalSeconds) * ($YellowUsers.count/($i + 1))) - $TotalSeconds)
-            [system.gc]::Collect()
-        }
-
-        $EndTimeYellow = $(Get-Date)
-        Write-Host "Wrote Yellow Groups to File, $(($EndTimeYellow - $StartTimeYellow).Minutes) Minutes Elapsed" -ForegroundColor Yellow
-        $null = $YellowUsers
-        [system.gc]::Collect()
-
-    # Red Users and Groups
-        Write-Progress -Id 1 -Activity 'Red User Scoping' -Status " --- Scoping Red User Objects" -PercentComplete 75
-        $RedUsers = $Users | Where-Object {(!$_.enabled) -or (!$_.lastlogondate) -or ($_.enabled -and $_.lastlogondate -le ($Date.AddDays(-365)))} | Select -ExpandProperty DistinguishedName
-        Write-Host "$($RedUsers.count) Red Users" -ForegroundColor Red
-        $RedUsers | Out-File -FilePath "$($Directory)\RedUsers.txt"
-
-        # Write to File
-        $StartTimeRed = $(Get-Date)
-        Out-File -FilePath "$($Directory)\GroupsWithRed.txt"
-
-        for($i = 0; $i -lt $RedUsers.count; $i++) {
-            $TempGroups = Get-WinADGroupMemberOf $RedUsers[$i] | Select -ExpandProperty DistinguishedName
-            try {
-                Add-Content -Path "$($Directory)\GroupsWithRed.txt" -Value $TempGroups
-            } catch {
-                Write-Host "Error Occurred while appending Red Groups:"
-                Write-Host $_
-            }
-            $CurrentTime = $(Get-Date)
-            $TotalSeconds = ($CurrentTime - $StartTimeRed).TotalSeconds
-            Write-Progress -Id 10 -ParentId 1 -Activity 'Red User-Group Scoping' -Status " --- Getting Groups with Red Users" -PercentComplete (100 * $i / $RedUsers.count) -SecondsRemaining ((($TotalSeconds) * ($RedUsers.count/($i + 1))) - $TotalSeconds)
-            [system.gc]::Collect()
-        }
-
-        $EndTimeRed = $(Get-Date)
-        Write-Host "Wrote Red Groups to File, $(($EndTimeRed - $StartTimeRed).Minutes) Minutes Elapsed" -ForegroundColor Red
-        $null = $RedUsers
-        [system.gc]::Collect()
-
+    Write-Progress -Id 1 -Activity 'Scoping Report' -Status '--- Completed' -PercentComplete 100
+    Write-Host "Scope Report Completed Successfully at $($Directory)"
+    Write-Host "The files took $(($(Get-Date) - $Date).Minutes) minutes to generate."
 
 }
 
@@ -603,7 +477,7 @@ Function Invoke-ADScopeReport {
 
         Switch($Step) {
             "1" {
-                Export-ScopedUsersAndGroups -Server $Server -DateString ($Date).ToString('yyyy-MM-dd HH:mm:ss') -InactiveThreshold 90 -RootFolder $PSScriptRoot
+                Export-ScopedUsersAndNestedGroups -Server $Server -DateString ($Date).ToString('yyyy-MM-dd HH:mm:ss') -InactiveThreshold 90 -RootFolder $PSScriptRoot
                 Break
             }
             "2" {
