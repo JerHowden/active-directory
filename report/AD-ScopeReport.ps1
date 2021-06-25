@@ -59,7 +59,7 @@ Function Export-ScopedUsersandImmediateGroups {
         $Groups = Get-ADGroup -Filter * | Select -ExpandProperty distinguishedname
 
     # Immediate Green Groups
-        Write-Progress -Id 1 -Activity 'Immediate Groups' -Status " --- Getting Immediate Green Groups" -PercentComplete 40
+        Write-Progress -Id 1 -Activity 'Green Groups' -Status " --- Getting Immediate Green Groups" -PercentComplete 40
         $StartTimeGreen = $(Get-Date)
 
         $IGreenGroups = [System.Collections.ArrayList]::new()
@@ -75,51 +75,238 @@ Function Export-ScopedUsersandImmediateGroups {
             if($FoundGreenUser) {
                 $IGreenGroups.Add($Groups[$i])
             }
-            Write-Progress -Id 10 -ParentId 1 -Activity 'Immediate Groups' -Status " --- Added $($IGreenGroups.count) Immediate Green Groups" -PercentComplete (100 * $i / $Groups.count)
+            Write-Progress -Id 10 -ParentId 1 -Activity 'Immediate Groups' -Status " --- Scoped $($IGreenGroups.count) Immediate Green Groups" -PercentComplete (100 * $i / $Groups.count)
         }
-        $IGreenGroups | Out-File -FilePath "$($Directory)\GroupsWithGreen.txt"
 
         $EndTimeGreen = $(Get-Date)
-        Write-Host "Wrote Green Groups to File, $(($EndTimeGreen - $StartTimeGreen).Minutes) Minutes Elapsed" -ForegroundColor Green
+        Write-Host "Found $($IGreenGroups.count) Immediate Green Groups, $(($EndTimeGreen - $StartTimeGreen).Minutes) Minutes Elapsed" -ForegroundColor Green
         $null = $GreenUsers
         [system.gc]::Collect()
 
     # Nested Green Groups
         $StartTimeGreen = $(Get-Date)
 
-        $ChildGroups = $IGreenGroups
+        $MasterGreenGroups = [System.Collections.ArrayList]::new() # Total Green Groups List
+        $MasterGreenGroups.AddRange($IGreenGroups)
+        $ChildGreenGroups = [System.Collections.ArrayList]::new() # Previous Nesting Level Green Groups List
+        $ChildGreenGroups.AddRange($IGreenGroups)
+        $NewGreenGroups = [System.Collections.ArrayList]::new() # New Nesting Level Green Groups List
         $ParentGroups = [System.Collections.ArrayList]::new()
         $ParentGroups.AddRange($Groups)
+        $NestedStep = 0
         while($True) {
-            $nestedStep = 0
-            $NewParentGroups = $ParentGroups
+            Write-Progress -Id 1 -Activity 'Green Groups' -Status " --- Scoping Green Groups on Level $($NestedStep)" -PercentComplete 50
+            $null = $NewParentGroups
+            $NewParentGroups = [System.Collections.ArrayList]::new()
+            $NewParentGroups.AddRange($ParentGroups)
             for($i = 0; $i -lt $ParentGroups.count; $i++) {
-                $ParentGroupMembers = Get-ADGroupMember -Identity $ParentGroups[$i] | Where-Object {$_.objectclass -eq "group"}
-                $FoundGreenObject = $False
+                $ParentGroupMembers = Get-ADGroupMember -Identity $ParentGroups[$i] | Where-Object {$_.objectclass -eq "group"} | Select -ExpandProperty distinguishedname
+                $FoundGreenGroup = $False
                 foreach($GroupMember in $ParentGroupMembers) {
-                    if($ChildGroups -contains $GroupMember) {
-                        $FoundGreenObject = $True
+                    if($ChildGreenGroups -contains $GroupMember) {
+                        $FoundGreenGroup = $True
                         break
                     }
                 }
-                if($FoundGreenObject) {
-                    $ChildGroups.Add($ParentGroups[$i])
+                if($FoundGreenGroup) {
+                    $NewGreenGroups.Add($ParentGroups[$i])
                     $NewParentGroups.Remove($ParentGroups[$i])
                 }
-                Write-Progress -Id 10 -ParentId 1 -Activity 'Immediate Groups' -Status " --- Added $($IGreenGroups.count) Immediate Green Groups" -PercentComplete (100 * $i / $Groups.count)
+                Write-Progress -Id 10 -ParentId 1 -Activity 'Green Groups' -Status " --- Scoped $($GreenGroups.count) Green Groups" -PercentComplete (100 * $i / $ParentGroups.count)
             }
             if($ParentGroups.count -eq $NewParentGroups.count) {
-                Write-Host "Found $($ChildGroups.count) Green Groups" -ForegroundColor Green
+                Write-Host "Found $($GreenGroups.count) Green Groups" -ForegroundColor Green
                 break
             }
-            $ParentGroups = $NewParentGroups
-            $nestedStep++
-            
+
+            $null = $ChildGreenGroups
+            $ChildGreenGroups = [System.Collections.ArrayList]::new()
+            $ChildGreenGroups.AddRange($NewGreenGroups)
+            $MasterGreenGroups.AddRange($NewGreenGroups)
+
+            $null = $ParentGroups
+            $ParentGroups = [System.Collections.ArrayList]::new()
+            $ParentGroups.AddRange($NewParentGroups)
+
+            $NestedStep++
         }
+        $MasterGreenGroups | Out-File -FilePath "$($Directory)\GroupsWithGreen.txt"
 
         $EndTimeGreen = $(Get-Date)
         Write-Host "Wrote Green Groups to File, $(($EndTimeGreen - $StartTimeGreen).Minutes) Minutes Elapsed" -ForegroundColor Green
-        $null = $GreenUsers
+        $null = $IGreenGroups
+        $null = $MasterGreenGroups
+        $null = $ChildGreenGroups
+        $null = $NewGreenGroups
+        $null = $ParentGroups
+        [system.gc]::Collect()
+
+
+    # Immediate Yellow Groups
+        Write-Progress -Id 1 -Activity 'Yellow Groups' -Status " --- Getting Immediate Yellow Groups" -PercentComplete 60
+        $StartTimeYellow = $(Get-Date)
+
+        $IYellowGroups = [System.Collections.ArrayList]::new()
+        for($i = 0; $i -lt $Groups.count; $i++) {
+            $GroupUsers = Get-ADGroupMember -Identity $Groups[$i] | Where-Object {$_.objectclass -eq "user"}
+            $FoundYellowUser = $False
+            foreach($GroupUser in $GroupUsers) {
+                if($YellowUsers -contains $GroupUser) {
+                    $FoundYellowUser = $True
+                    break
+                }
+            }
+            if($FoundYellowUser) {
+                $IYellowGroups.Add($Groups[$i])
+            }
+            Write-Progress -Id 10 -ParentId 1 -Activity 'Immediate Groups' -Status " --- Scoped $($IYellowGroups.count) Immediate Yellow Groups" -PercentComplete (100 * $i / $Groups.count)
+        }
+
+        $EndTimeYellow = $(Get-Date)
+        Write-Host "Found $($IYellowGroups.count) Immediate Yellow Groups, $(($EndTimeYellow - $StartTimeYellow).Minutes) Minutes Elapsed" -ForegroundColor Yellow
+        $null = $YellowUsers
+        [system.gc]::Collect()
+
+    # Nested Yellow Groups
+        $StartTimeYellow = $(Get-Date)
+
+        $MasterYellowGroups = [System.Collections.ArrayList]::new() # Total Yellow Groups List
+        $MasterYellowGroups.AddRange($IYellowGroups)
+        $ChildYellowGroups = [System.Collections.ArrayList]::new() # Previous Nesting Level Yellow Groups List
+        $ChildYellowGroups.AddRange($IYellowGroups)
+        $NewYellowGroups = [System.Collections.ArrayList]::new() # New Nesting Level Yellow Groups List
+        $ParentGroups = [System.Collections.ArrayList]::new()
+        $ParentGroups.AddRange($Groups)
+        $NestedStep = 0
+        while($True) {
+            Write-Progress -Id 1 -Activity 'Yellow Groups' -Status " --- Scoping Yellow Groups on Level $($NestedStep)" -PercentComplete 70
+            $null = $NewParentGroups
+            $NewParentGroups = [System.Collections.ArrayList]::new()
+            $NewParentGroups.AddRange($ParentGroups)
+            for($i = 0; $i -lt $ParentGroups.count; $i++) {
+                $ParentGroupMembers = Get-ADGroupMember -Identity $ParentGroups[$i] | Where-Object {$_.objectclass -eq "group"} | Select -ExpandProperty distinguishedname
+                $FoundYellowGroup = $False
+                foreach($GroupMember in $ParentGroupMembers) {
+                    if($ChildYellowGroups -contains $GroupMember) {
+                        $FoundYellowGroup = $True
+                        break
+                    }
+                }
+                if($FoundYellowGroup) {
+                    $NewYellowGroups.Add($ParentGroups[$i])
+                    $NewParentGroups.Remove($ParentGroups[$i])
+                }
+                Write-Progress -Id 10 -ParentId 1 -Activity 'Yellow Groups' -Status " --- Scoped $($YellowGroups.count) Yellow Groups" -PercentComplete (100 * $i / $ParentGroups.count)
+            }
+            if($ParentGroups.count -eq $NewParentGroups.count) {
+                Write-Host "Found $($YellowGroups.count) Yellow Groups" -ForegroundColor Yellow
+                break
+            }
+
+            $null = $ChildYellowGroups
+            $ChildYellowGroups = [System.Collections.ArrayList]::new()
+            $ChildYellowGroups.AddRange($NewYellowGroups)
+            $MasterYellowGroups.AddRange($NewYellowGroups)
+
+            $null = $ParentGroups
+            $ParentGroups = [System.Collections.ArrayList]::new()
+            $ParentGroups.AddRange($NewParentGroups)
+
+            $NestedStep++
+        }
+        $MasterYellowGroups | Out-File -FilePath "$($Directory)\GroupsWithYellow.txt"
+
+        $EndTimeYellow = $(Get-Date)
+        Write-Host "Wrote Yellow Groups to File, $(($EndTimeYellow - $StartTimeYellow).Minutes) Minutes Elapsed" -ForegroundColor Yellow
+        $null = $IYellowGroups
+        $null = $MasterYellowGroups
+        $null = $ChildYellowGroups
+        $null = $NewYellowGroups
+        $null = $ParentGroups
+        [system.gc]::Collect()
+
+
+    # Immediate Red Groups
+        Write-Progress -Id 1 -Activity 'Red Groups' -Status " --- Getting Immediate Red Groups" -PercentComplete 80
+        $StartTimeRed = $(Get-Date)
+
+        $IRedGroups = [System.Collections.ArrayList]::new()
+        for($i = 0; $i -lt $Groups.count; $i++) {
+            $GroupUsers = Get-ADGroupMember -Identity $Groups[$i] | Where-Object {$_.objectclass -eq "user"}
+            $FoundRedUser = $False
+            foreach($GroupUser in $GroupUsers) {
+                if($RedUsers -contains $GroupUser) {
+                    $FoundRedUser = $True
+                    break
+                }
+            }
+            if($FoundRedUser) {
+                $IRedGroups.Add($Groups[$i])
+            }
+            Write-Progress -Id 10 -ParentId 1 -Activity 'Immediate Groups' -Status " --- Scoped $($IRedGroups.count) Immediate Red Groups" -PercentComplete (100 * $i / $Groups.count)
+        }
+
+        $EndTimeRed = $(Get-Date)
+        Write-Host "Found $($IRedGroups.count) Immediate Red Groups, $(($EndTimeRed - $StartTimeRed).Minutes) Minutes Elapsed" -ForegroundColor Red
+        $null = $RedUsers
+        [system.gc]::Collect()
+
+    # Nested Red Groups
+        $StartTimeRed = $(Get-Date)
+
+        $MasterRedGroups = [System.Collections.ArrayList]::new() # Total Red Groups List
+        $MasterRedGroups.AddRange($IRedGroups)
+        $ChildRedGroups = [System.Collections.ArrayList]::new() # Previous Nesting Level Red Groups List
+        $ChildRedGroups.AddRange($IRedGroups)
+        $NewRedGroups = [System.Collections.ArrayList]::new() # New Nesting Level Red Groups List
+        $ParentGroups = [System.Collections.ArrayList]::new()
+        $ParentGroups.AddRange($Groups)
+        $NestedStep = 0
+        while($True) {
+            Write-Progress -Id 1 -Activity 'Red Groups' -Status " --- Scoping Red Groups on Level $($NestedStep)" -PercentComplete 90
+            $null = $NewParentGroups
+            $NewParentGroups = [System.Collections.ArrayList]::new()
+            $NewParentGroups.AddRange($ParentGroups)
+            for($i = 0; $i -lt $ParentGroups.count; $i++) {
+                $ParentGroupMembers = Get-ADGroupMember -Identity $ParentGroups[$i] | Where-Object {$_.objectclass -eq "group"} | Select -ExpandProperty distinguishedname
+                $FoundRedGroup = $False
+                foreach($GroupMember in $ParentGroupMembers) {
+                    if($ChildRedGroups -contains $GroupMember) {
+                        $FoundRedGroup = $True
+                        break
+                    }
+                }
+                if($FoundRedGroup) {
+                    $NewRedGroups.Add($ParentGroups[$i])
+                    $NewParentGroups.Remove($ParentGroups[$i])
+                }
+                Write-Progress -Id 10 -ParentId 1 -Activity 'Red Groups' -Status " --- Scoped $($RedGroups.count) Red Groups" -PercentComplete (100 * $i / $ParentGroups.count)
+            }
+            if($ParentGroups.count -eq $NewParentGroups.count) {
+                Write-Host "Found $($RedGroups.count) Red Groups" -ForegroundColor Red
+                break
+            }
+
+            $null = $ChildRedGroups
+            $ChildRedGroups = [System.Collections.ArrayList]::new()
+            $ChildRedGroups.AddRange($NewRedGroups)
+            $MasterRedGroups.AddRange($NewRedGroups)
+
+            $null = $ParentGroups
+            $ParentGroups = [System.Collections.ArrayList]::new()
+            $ParentGroups.AddRange($NewParentGroups)
+
+            $NestedStep++
+        }
+        $MasterRedGroups | Out-File -FilePath "$($Directory)\GroupsWithRed.txt"
+
+        $EndTimeRed = $(Get-Date)
+        Write-Host "Wrote Red Groups to File, $(($EndTimeRed - $StartTimeRed).Minutes) Minutes Elapsed" -ForegroundColor Red
+        $null = $IRedGroups
+        $null = $MasterRedGroups
+        $null = $ChildRedGroups
+        $null = $NewRedGroups
+        $null = $ParentGroups
         [system.gc]::Collect()
 
 }
