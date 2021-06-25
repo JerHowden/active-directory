@@ -56,15 +56,20 @@ Function Export-ScopedUsersAndNestedGroups {
         $RedUsers | Out-File -FilePath "$($Directory)\RedUsers.txt"
 
     # Groups
-        $Groups = Get-ADGroup -Filter * | Select -ExpandProperty distinguishedname
+        $Groups = Get-ADGroup -Filter * | Select -ExpandProperty distinguishedname | Where-Object {$_ -notlike "CN=Domain Users*"}
 
     # Immediate Green Groups
         Write-Progress -Id 1 -Activity 'Green Groups' -Status " --- Getting Immediate Green Groups" -PercentComplete 40
         $StartTimeGreen = $(Get-Date)
 
+        $ManualCheckGreenGroups = [System.Collections.ArrayList]::new()
         $IGreenGroups = [System.Collections.ArrayList]::new()
         for($i = 0; $i -lt $Groups.count; $i++) {
-            $GroupUsers = Get-ADGroupMember -Identity $Groups[$i] | Where-Object {$_.objectclass -eq "user"}
+            try {
+                $GroupUsers = Get-ADGroupMember -Identity $Groups[$i] | Where-Object {$_.objectclass -eq "user"}
+            } catch {
+                $ManualCheckGreenGroups.Add($Groups[$i])
+            }
             $FoundGreenUser = $False
             foreach($GroupUser in $GroupUsers) {
                 if($GreenUsers -contains $GroupUser) {
@@ -93,14 +98,19 @@ Function Export-ScopedUsersAndNestedGroups {
         $NewGreenGroups = [System.Collections.ArrayList]::new() # New Nesting Level Green Groups List
         $ParentGroups = [System.Collections.ArrayList]::new()
         $ParentGroups.AddRange($Groups)
-        $NestedStep = 0
-        while($True) {
+        $NestedStep = 1
+        while($IGreenGroups.count -gt 0) {
             Write-Progress -Id 1 -Activity 'Green Groups' -Status " --- Scoping Green Groups on Level $($NestedStep)" -PercentComplete 50
             $null = $NewParentGroups
             $NewParentGroups = [System.Collections.ArrayList]::new()
             $NewParentGroups.AddRange($ParentGroups)
             for($i = 0; $i -lt $ParentGroups.count; $i++) {
-                $ParentGroupMembers = Get-ADGroupMember -Identity $ParentGroups[$i] | Where-Object {$_.objectclass -eq "group"} | Select -ExpandProperty distinguishedname
+                $ParentGroupMembers = $null
+                try {
+                    $ParentGroupMembers = Get-ADGroupMember -Identity $ParentGroups[$i] | Where-Object {$_.objectclass -eq "group"} | Select -ExpandProperty distinguishedname
+                } catch {
+                    $ManualCheckGreenGroups.Add($ParentGroups[$i])
+                }
                 $FoundGreenGroup = $False
                 foreach($GroupMember in $ParentGroupMembers) {
                     if($ChildGreenGroups -contains $GroupMember) {
@@ -131,6 +141,11 @@ Function Export-ScopedUsersAndNestedGroups {
             $NestedStep++
         }
         $MasterGreenGroups | Out-File -FilePath "$($Directory)\GroupsWithGreen.txt"
+        $MissedGreenGroups = [System.Collections.ArrayList]::new()
+        foreach($LargeGroup in $ManualCheckGreenGroups) {
+            if(!($MasterGreenGroups -contains $LargeGroup)) {  $MissedGreenGroups.Add($LargeGroup)  }
+        }
+        if($MissedGreenGroups.count -gt 0) {  $MissedGreenGroups | Out-File -FilePath "$($Directory)\ManualCheckGroupsWithGreen.txt"  }
 
         $EndTimeGreen = $(Get-Date)
         Write-Host "Wrote Green Groups to File, $(($EndTimeGreen - $StartTimeGreen).Minutes) Minutes Elapsed" -ForegroundColor Green
@@ -146,9 +161,14 @@ Function Export-ScopedUsersAndNestedGroups {
         Write-Progress -Id 1 -Activity 'Yellow Groups' -Status " --- Getting Immediate Yellow Groups" -PercentComplete 60
         $StartTimeYellow = $(Get-Date)
 
+        $ManualCheckYellowGroups = [System.Collections.ArrayList]::new()
         $IYellowGroups = [System.Collections.ArrayList]::new()
         for($i = 0; $i -lt $Groups.count; $i++) {
-            $GroupUsers = Get-ADGroupMember -Identity $Groups[$i] | Where-Object {$_.objectclass -eq "user"}
+            try {
+                $GroupUsers = Get-ADGroupMember -Identity $Groups[$i] | Where-Object {$_.objectclass -eq "user"}
+            } catch {
+                $ManualCheckYellowGroups.Add($Groups[$i])
+            }
             $FoundYellowUser = $False
             foreach($GroupUser in $GroupUsers) {
                 if($YellowUsers -contains $GroupUser) {
@@ -177,14 +197,18 @@ Function Export-ScopedUsersAndNestedGroups {
         $NewYellowGroups = [System.Collections.ArrayList]::new() # New Nesting Level Yellow Groups List
         $ParentGroups = [System.Collections.ArrayList]::new()
         $ParentGroups.AddRange($Groups)
-        $NestedStep = 0
-        while($True) {
+        $NestedStep = 1
+        while($IYellowGroups.count -gt 0) {
             Write-Progress -Id 1 -Activity 'Yellow Groups' -Status " --- Scoping Yellow Groups on Level $($NestedStep)" -PercentComplete 70
             $null = $NewParentGroups
             $NewParentGroups = [System.Collections.ArrayList]::new()
             $NewParentGroups.AddRange($ParentGroups)
             for($i = 0; $i -lt $ParentGroups.count; $i++) {
-                $ParentGroupMembers = Get-ADGroupMember -Identity $ParentGroups[$i] | Where-Object {$_.objectclass -eq "group"} | Select -ExpandProperty distinguishedname
+                try {
+                    $ParentGroupMembers = Get-ADGroupMember -Identity $ParentGroups[$i] | Where-Object {$_.objectclass -eq "group"} | Select -ExpandProperty distinguishedname
+                } catch {
+                    $ManualCheckGreenGroups.Add($ParentGroups[$i])
+                }
                 $FoundYellowGroup = $False
                 foreach($GroupMember in $ParentGroupMembers) {
                     if($ChildYellowGroups -contains $GroupMember) {
@@ -215,6 +239,11 @@ Function Export-ScopedUsersAndNestedGroups {
             $NestedStep++
         }
         $MasterYellowGroups | Out-File -FilePath "$($Directory)\GroupsWithYellow.txt"
+        $MissedYellowGroups = [System.Collections.ArrayList]::new()
+        foreach($LargeGroup in $ManualCheckYellowGroups) {
+            if(!($MasterYellowGroups -contains $LargeGroup)) {  $MissedYellowGroups.Add($LargeGroup)  }
+        }
+        if($MissedYellowGroups.count -gt 0) {  $MissedYellowGroups | Out-File -FilePath "$($Directory)\ManualCheckGroupsWithYellow.txt"  }
 
         $EndTimeYellow = $(Get-Date)
         Write-Host "Wrote Yellow Groups to File, $(($EndTimeYellow - $StartTimeYellow).Minutes) Minutes Elapsed" -ForegroundColor Yellow
@@ -230,9 +259,14 @@ Function Export-ScopedUsersAndNestedGroups {
         Write-Progress -Id 1 -Activity 'Red Groups' -Status " --- Getting Immediate Red Groups" -PercentComplete 80
         $StartTimeRed = $(Get-Date)
 
+        $ManualCheckRedGroups = [System.Collections.ArrayList]::new()
         $IRedGroups = [System.Collections.ArrayList]::new()
         for($i = 0; $i -lt $Groups.count; $i++) {
-            $GroupUsers = Get-ADGroupMember -Identity $Groups[$i] | Where-Object {$_.objectclass -eq "user"}
+            try {
+                $GroupUsers = Get-ADGroupMember -Identity $Groups[$i] | Where-Object {$_.objectclass -eq "user"}
+            } catch {
+                $ManualCheckRedGroups.Add($Groups[$i])
+            }
             $FoundRedUser = $False
             foreach($GroupUser in $GroupUsers) {
                 if($RedUsers -contains $GroupUser) {
@@ -261,14 +295,18 @@ Function Export-ScopedUsersAndNestedGroups {
         $NewRedGroups = [System.Collections.ArrayList]::new() # New Nesting Level Red Groups List
         $ParentGroups = [System.Collections.ArrayList]::new()
         $ParentGroups.AddRange($Groups)
-        $NestedStep = 0
-        while($True) {
+        $NestedStep = 1
+        while($IRedGroups.count -gt 0) {
             Write-Progress -Id 1 -Activity 'Red Groups' -Status " --- Scoping Red Groups on Level $($NestedStep)" -PercentComplete 90
             $null = $NewParentGroups
             $NewParentGroups = [System.Collections.ArrayList]::new()
             $NewParentGroups.AddRange($ParentGroups)
             for($i = 0; $i -lt $ParentGroups.count; $i++) {
-                $ParentGroupMembers = Get-ADGroupMember -Identity $ParentGroups[$i] | Where-Object {$_.objectclass -eq "group"} | Select -ExpandProperty distinguishedname
+                try {
+                    $ParentGroupMembers = Get-ADGroupMember -Identity $ParentGroups[$i] | Where-Object {$_.objectclass -eq "group"} | Select -ExpandProperty distinguishedname
+                } catch {
+                    $ManualCheckRedGroups.Add($ParentGroups[$i])
+                }
                 $FoundRedGroup = $False
                 foreach($GroupMember in $ParentGroupMembers) {
                     if($ChildRedGroups -contains $GroupMember) {
@@ -299,6 +337,11 @@ Function Export-ScopedUsersAndNestedGroups {
             $NestedStep++
         }
         $MasterRedGroups | Out-File -FilePath "$($Directory)\GroupsWithRed.txt"
+        $MissedRedGroups = [System.Collections.ArrayList]::new()
+        foreach($LargeGroup in $ManualCheckRedGroups) {
+            if(!($MasterRedGroups -contains $LargeGroup)) {  $MissedRedGroups.Add($LargeGroup)  }
+        }
+        if($MissedRedGroups.count -gt 0) {  $MissedRedGroups | Out-File -FilePath "$($Directory)\ManualCheckGroupsWithRed.txt"  }
 
         $EndTimeRed = $(Get-Date)
         Write-Host "Wrote Red Groups to File, $(($EndTimeRed - $StartTimeRed).Minutes) Minutes Elapsed" -ForegroundColor Red
