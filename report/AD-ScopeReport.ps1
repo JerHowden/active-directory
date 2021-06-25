@@ -51,7 +51,7 @@ Function Export-ScopedUsersAndGroups {
         for($i = 0; $i -lt $GreenUsers.count; $i++) {
             $TempGroups = Get-WinADGroupMemberOf $GreenUsers[$i] | Select -ExpandProperty DistinguishedName
             try {
-                Add-Content -Path "$(Directory)\GroupsWithGreen.txt" -Value $TempGroups
+                Add-Content -Path "$($Directory)\GroupsWithGreen.txt" -Value $TempGroups
             } catch {
                 Write-Host "Error Occurred while appending Green Groups:"
                 Write-Host $_
@@ -80,7 +80,7 @@ Function Export-ScopedUsersAndGroups {
         for($i = 0; $i -lt $YellowUsers.count; $i++) {
             $TempGroups = Get-WinADGroupMemberOf $YellowUsers[$i] | Select -ExpandProperty DistinguishedName
             try {
-                Add-Content -Path "$(Directory)\GroupsWithYellow.txt" -Value $TempGroups
+                Add-Content -Path "$($Directory)\GroupsWithYellow.txt" -Value $TempGroups
             } catch {
                 Write-Host "Error Occurred while appending Yellow Groups:"
                 Write-Host $_
@@ -109,7 +109,7 @@ Function Export-ScopedUsersAndGroups {
         for($i = 0; $i -lt $RedUsers.count; $i++) {
             $TempGroups = Get-WinADGroupMemberOf $RedUsers[$i] | Select -ExpandProperty DistinguishedName
             try {
-                Add-Content -Path "$(Directory)\GroupsWithRed.txt" -Value $TempGroups
+                Add-Content -Path "$($Directory)\GroupsWithRed.txt" -Value $TempGroups
             } catch {
                 Write-Host "Error Occurred while appending Red Groups:"
                 Write-Host $_
@@ -290,7 +290,7 @@ Function Invoke-ADScopeReport {
 
         Switch($Step) {
             "1" {
-                Export-ScopedUsersAndGroups -Server $Server -DateString ($Date).ToString('yyyy-MM-dd HH:mm:ss') -InactiveThreshold 90 -Directory $PSScriptRoot
+                Export-ScopedUsersAndGroups -Server $Server -DateString ($Date).ToString('yyyy-MM-dd HH:mm:ss') -InactiveThreshold 90 -RootFolder $PSScriptRoot
                 Break
             }
             "2" {
