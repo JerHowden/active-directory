@@ -1,3 +1,129 @@
+Function Export-ScopedUsersandImmediateGroups {
+
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory,
+            HelpMessage='Active Directory Server. (DC01.prod.demo.com)')]
+        [string]$Server,
+
+        [Parameter(Mandatory,
+            HelpMessage='Date string in the form of yyyy-MM-dd HH:mm:ss')]
+        [ValidateScript({ 
+            [System.DateTime]$ParsedDate = Get-Date
+            [DateTime]::TryParseExact($_, 'yyyy-MM-dd HH:mm:ss', $null, [System.Globalization.DateTimeStyles]::None, [ref]$ParsedDate)
+            $ParsedDate
+        })]
+        [string]$DateString,
+
+        [Parameter(
+            HelpMessage='Cutoff in days for inactive users. (90), (180), (360)')]
+        [ValidateScript({ ($_.count -gt 0) -and ($_.count -le 12) })]
+        [int]$InactiveThreshold,
+
+        [Parameter(Mandatory,
+            HelpMessage='Folder to send the export files to.')]
+        [string]$RootFolder
+    )
+
+    $Date = [DateTime]::ParseExact($DateString, 'yyyy-MM-dd HH:mm:ss', $null)
+    If(!$InactiveThreshold) { $InactiveThreshold = (Get-ADDefaultDomainPasswordPolicy).MaxPasswordAge.Days }
+
+    Write-Progress -Id 1 -Activity 'User Scoping' -Status " --- Initializating User Scoping" -PercentComplete 0
+    New-Item -Path "$($RootFolder)" -Name "ScopeReport $($Date.ToString('yyyy-MM-dd HH-mm-ss'))" -ItemType "directory"
+    $Directory = "$($RootFolder)\ScopeReport $($Date.ToString('yyyy-MM-dd HH-mm-ss'))"
+
+    # Users
+        $Users = Get-ADUser -Filter * -Properties distinguishedname,lastlogondate,enabled -Server $Server
+        Write-Host "$($Users.count) Users" -ForegroundColor Cyan
+        $InactiveUserDate = $Date.AddDays(-1 * $InactiveThreshold)
+
+    # Green Users
+        Write-Progress -Id 1 -Activity 'User Scoping' -Status " --- Scoping Green User Objects" -PercentComplete 10
+        $GreenUsers = $Users | Where-Object {$_.enabled -and $_.lastlogondate -and $_.lastlogondate -gt $InactiveUserDate} | Select -ExpandProperty DistinguishedName
+        Write-Host "$($GreenUsers.count) Green Users" -ForegroundColor Green
+        $GreenUsers | Out-File -FilePath "$($Directory)\GreenUsers.txt"
+
+    # Yellow Users
+        Write-Progress -Id 1 -Activity 'User Scoping' -Status " --- Scoping Yellow User Objects" -PercentComplete 20
+        $YellowUsers = $Users | Where-Object {$_.enabled -and $_.lastlogondate -and $_.lastlogondate -le $InactiveUserDate -and $_.lastlogondate -gt ($Date.AddDays(-365))} | Select -ExpandProperty DistinguishedName
+        Write-Host "$($YellowUsers.count) Yellow Users" -ForegroundColor Yellow
+        $YellowUsers | Out-File -FilePath "$($Directory)\YellowUsers.txt"
+
+    # Red Users
+        Write-Progress -Id 1 -Activity 'User Scoping' -Status " --- Scoping Red User Objects" -PercentComplete 30
+        $RedUsers = $Users | Where-Object {(!$_.enabled) -or (!$_.lastlogondate) -or ($_.enabled -and $_.lastlogondate -le ($Date.AddDays(-365)))} | Select -ExpandProperty DistinguishedName
+        Write-Host "$($RedUsers.count) Red Users" -ForegroundColor Red
+        $RedUsers | Out-File -FilePath "$($Directory)\RedUsers.txt"
+
+    # Groups
+        $Groups = Get-ADGroup -Filter * | Select -ExpandProperty distinguishedname
+
+    # Immediate Green Groups
+        Write-Progress -Id 1 -Activity 'Immediate Groups' -Status " --- Getting Immediate Green Groups" -PercentComplete 40
+        $StartTimeGreen = $(Get-Date)
+
+        $IGreenGroups = [System.Collections.ArrayList]::new()
+        for($i = 0; $i -lt $Groups.count; $i++) {
+            $GroupUsers = Get-ADGroupMember -Identity $Groups[$i] | Where-Object {$_.objectclass -eq "user"}
+            $FoundGreenUser = $False
+            foreach($GroupUser in $GroupUsers) {
+                if($GreenUsers -contains $GroupUser) {
+                    $FoundGreenUser = $True
+                    break
+                }
+            }
+            if($FoundGreenUser) {
+                $IGreenGroups.Add($Groups[$i])
+            }
+            Write-Progress -Id 10 -ParentId 1 -Activity 'Immediate Groups' -Status " --- Added $($IGreenGroups.count) Immediate Green Groups" -PercentComplete (100 * $i / $Groups.count)
+        }
+        $IGreenGroups | Out-File -FilePath "$($Directory)\GroupsWithGreen.txt"
+
+        $EndTimeGreen = $(Get-Date)
+        Write-Host "Wrote Green Groups to File, $(($EndTimeGreen - $StartTimeGreen).Minutes) Minutes Elapsed" -ForegroundColor Green
+        $null = $GreenUsers
+        [system.gc]::Collect()
+
+    # Nested Green Groups
+        $StartTimeGreen = $(Get-Date)
+
+        $ChildGroups = $IGreenGroups
+        $ParentGroups = [System.Collections.ArrayList]::new()
+        $ParentGroups.AddRange($Groups)
+        while($True) {
+            $nestedStep = 0
+            $NewParentGroups = $ParentGroups
+            for($i = 0; $i -lt $ParentGroups.count; $i++) {
+                $ParentGroupMembers = Get-ADGroupMember -Identity $ParentGroups[$i] | Where-Object {$_.objectclass -eq "group"}
+                $FoundGreenObject = $False
+                foreach($GroupMember in $ParentGroupMembers) {
+                    if($ChildGroups -contains $GroupMember) {
+                        $FoundGreenObject = $True
+                        break
+                    }
+                }
+                if($FoundGreenObject) {
+                    $ChildGroups.Add($ParentGroups[$i])
+                    $NewParentGroups.Remove($ParentGroups[$i])
+                }
+                Write-Progress -Id 10 -ParentId 1 -Activity 'Immediate Groups' -Status " --- Added $($IGreenGroups.count) Immediate Green Groups" -PercentComplete (100 * $i / $Groups.count)
+            }
+            if($ParentGroups.count -eq $NewParentGroups.count) {
+                Write-Host "Found $($ChildGroups.count) Green Groups" -ForegroundColor Green
+                break
+            }
+            $ParentGroups = $NewParentGroups
+            $nestedStep++
+            
+        }
+
+        $EndTimeGreen = $(Get-Date)
+        Write-Host "Wrote Green Groups to File, $(($EndTimeGreen - $StartTimeGreen).Minutes) Minutes Elapsed" -ForegroundColor Green
+        $null = $GreenUsers
+        [system.gc]::Collect()
+
+}
+
 # Export Scoped Users and Duplicate Scoped Groups
 Function Export-ScopedUsersAndGroups {
 
