@@ -102,7 +102,7 @@ Function Export-ScopedUsersAndNestedGroups {
         $ParentGroups.AddRange($Groups)
         $NestedStep = 1
         while($IGreenGroups.count -gt 0) {
-            Write-Progress -Id 1 -Activity 'Green Groups' -Status " --- Scoping Green Groups on Level $($NestedStep), $($MasterGreenGroups.count)" -PercentComplete 50
+            Write-Progress -Id 1 -Activity 'Green Groups' -Status " --- Scoping Green Groups on Level $($NestedStep), $($MasterGreenGroups.count) Total Groups" -PercentComplete 50
             $null = $NewParentGroups
             $NewParentGroups = [System.Collections.ArrayList]::new()
             $NewParentGroups.AddRange($ParentGroups)
@@ -208,7 +208,7 @@ Function Export-ScopedUsersAndNestedGroups {
         $ParentGroups.AddRange($Groups)
         $NestedStep = 1
         while($IYellowGroups.count -gt 0) {
-            Write-Progress -Id 1 -Activity 'Yellow Groups' -Status " --- Scoping Yellow Groups on Level $($NestedStep), $($MasterYellowGroups.count)" -PercentComplete 70
+            Write-Progress -Id 1 -Activity 'Yellow Groups' -Status " --- Scoping Yellow Groups on Level $($NestedStep), $($MasterYellowGroups.count) Total Groups" -PercentComplete 70
             $null = $NewParentGroups
             $NewParentGroups = [System.Collections.ArrayList]::new()
             $NewParentGroups.AddRange($ParentGroups)
@@ -313,7 +313,7 @@ Function Export-ScopedUsersAndNestedGroups {
         $ParentGroups.AddRange($Groups)
         $NestedStep = 1
         while($IRedGroups.count -gt 0) {
-            Write-Progress -Id 1 -Activity 'Red Groups' -Status " --- Scoping Red Groups on Level $($NestedStep), $($MasterRedGroups.count)" -PercentComplete 90
+            Write-Progress -Id 1 -Activity 'Red Groups' -Status " --- Scoping Red Groups on Level $($NestedStep), $($MasterRedGroups.count) Total Groups" -PercentComplete 90
             $null = $NewParentGroups
             $NewParentGroups = [System.Collections.ArrayList]::new()
             $NewParentGroups.AddRange($ParentGroups)
@@ -375,7 +375,7 @@ Function Export-ScopedUsersAndNestedGroups {
 
     Write-Progress -Id 1 -Activity 'Scoping Report' -Status '--- Completed' -PercentComplete 100
     Write-Host "Scope Report Completed Successfully at $($Directory)"
-    Write-Host "The files took $(($(Get-Date) - $Date).TotalMinutes) minutes to generate."
+    Write-Host "The files took $(($(Get-Date) - $Date).TotalHours) hours to generate."
 
 }
 
@@ -483,7 +483,7 @@ Function Export-ScopedComputersAndNestedGroups {
         $ParentGroups.AddRange($Groups)
         $NestedStep = 1
         while($IGreenGroups.count -gt 0) {
-            Write-Progress -Id 1 -Activity 'Green Groups' -Status " --- Scoping Green Groups on Level $($NestedStep), $($MasterGreenGroups.count)" -PercentComplete 50
+            Write-Progress -Id 1 -Activity 'Green Groups' -Status " --- Scoping Green Groups on Level $($NestedStep), $($MasterGreenGroups.count) Total Groups" -PercentComplete 50
             $null = $NewParentGroups
             $NewParentGroups = [System.Collections.ArrayList]::new()
             $NewParentGroups.AddRange($ParentGroups)
@@ -589,7 +589,7 @@ Function Export-ScopedComputersAndNestedGroups {
         $ParentGroups.AddRange($Groups)
         $NestedStep = 1
         while($IYellowGroups.count -gt 0) {
-            Write-Progress -Id 1 -Activity 'Yellow Groups' -Status " --- Scoping Yellow Groups on Level $($NestedStep), $($MasterYellowGroups.count)" -PercentComplete 70
+            Write-Progress -Id 1 -Activity 'Yellow Groups' -Status " --- Scoping Yellow Groups on Level $($NestedStep), $($MasterYellowGroups.count) Total Groups" -PercentComplete 70
             $null = $NewParentGroups
             $NewParentGroups = [System.Collections.ArrayList]::new()
             $NewParentGroups.AddRange($ParentGroups)
@@ -756,7 +756,7 @@ Function Export-ScopedComputersAndNestedGroups {
 
     Write-Progress -Id 1 -Activity 'Scoping Report' -Status '--- Completed' -PercentComplete 100
     Write-Host "Scope Report Completed Successfully at $($Directory)"
-    Write-Host "The files took $(($(Get-Date) - $Date).TotalMinutes) minutes to generate."
+    Write-Host "The files took $(($(Get-Date) - $Date).TotalHours) hours to generate."
 
 }
 
