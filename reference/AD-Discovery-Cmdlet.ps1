@@ -482,4 +482,4 @@ Function Invoke-ADDiscovery {
 'prod.ncidemo.com' | Invoke-ADDiscovery -DomainController 'DC01' -Export
 
 # Prod
-# 'novelis.biz', 'aleris.biz' | Invoke-ADDiscovery -DomainController 'DC01' -Export -Prod
+# 'proddomain.biz', 'proddomain2.biz' | Invoke-ADDiscovery -DomainController 'AQRT3FG-DC01' -Export -Prod
